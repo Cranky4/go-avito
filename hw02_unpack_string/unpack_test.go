@@ -23,8 +23,7 @@ func TestUnpack(t *testing.T) {
 		{input: `qwe\\\3`, expected: `qwe\3`},
 		// own test
 		{input: `\10Ф1Я9Ю`, expected: `ФЯЯЯЯЯЯЯЯЯЮ`},
-		{input: `000\1`, expected: `1`},
-		{input: `000\12`, expected: `11`},
+		{input: `\01\10`, expected: `0`},
 		{input: `a0b0c0`, expected: ""},
 		{input: `嘿9嘿1嘿0嘿`, expected: `嘿嘿嘿嘿嘿嘿嘿嘿嘿嘿嘿`},
 	}

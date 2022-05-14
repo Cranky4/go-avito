@@ -28,6 +28,10 @@ func Unpack(input string) (string, error) {
 			updateResult(&sb, number, char)
 			char = '\n'
 		case number == 0 && err == nil:
+			// число пришло раньше буквы
+			if char == '\n' {
+				return "", ErrInvalidString
+			}
 			// поймали 0 в строке - не добавляем текущий символ в результат
 			char = '\n'
 		default:
@@ -51,7 +55,6 @@ func Unpack(input string) (string, error) {
 			char = symbol
 		}
 	}
-
 	// обработка последней буквы в строке
 	if char != '\n' {
 		updateResult(&sb, 1, char)
