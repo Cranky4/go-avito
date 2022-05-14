@@ -9,8 +9,8 @@ import (
 var ErrInvalidString = errors.New("invalid string")
 
 func Unpack(input string) (string, error) {
-	var runes []rune = []rune(input)
-	var char rune = '\n'
+	runes := []rune(input)
+	char := '\n'
 	var sb strings.Builder
 
 	for i := 0; i < len(runes); i++ {
@@ -18,7 +18,8 @@ func Unpack(input string) (string, error) {
 
 		number, err := strconv.Atoi(string(symbol))
 
-		if number != 0 {
+		switch {
+		case number != 0:
 			// число пришло раньше буквы
 			if char == '\n' {
 				return "", ErrInvalidString
@@ -26,10 +27,10 @@ func Unpack(input string) (string, error) {
 
 			updateResult(&sb, number, char)
 			char = '\n'
-		} else if number == 0 && err == nil {
+		case number == 0 && err == nil:
 			// поймали 0 в строке - не добавляем текущий символ в результат
 			char = '\n'
-		} else {
+		default:
 			// добавляем букву в результат 1 раз, если к этому моменту не указано число повторений
 			if char != '\n' {
 				updateResult(&sb, 1, char)
@@ -43,7 +44,7 @@ func Unpack(input string) (string, error) {
 
 				// устанавливаем следующий символ, как текущий и сдвигаем проверку символов направо
 				char = runes[i+1]
-				i += 1
+				i++
 				continue
 			}
 
@@ -54,13 +55,12 @@ func Unpack(input string) (string, error) {
 	// обработка последней буквы в строке
 	if char != '\n' {
 		updateResult(&sb, 1, char)
-		char = '\n'
 	}
 
 	return sb.String(), nil
 }
 
-// добавить в результат буквы
+// добавить в результат буквы.
 func updateResult(sb *strings.Builder, count int, char rune) {
 	i := 0
 	for i < count {
