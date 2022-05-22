@@ -9,8 +9,10 @@ import (
 var ErrInvalidString = errors.New("invalid string")
 
 func Unpack(input string) (string, error) {
+	const empty = '\n'
+
 	runes := []rune(input)
-	char := '\n'
+	char := empty
 	var sb strings.Builder
 
 	for i := 0; i < len(runes); i++ {
@@ -21,22 +23,22 @@ func Unpack(input string) (string, error) {
 		switch {
 		case number != 0:
 			// число пришло раньше буквы
-			if char == '\n' {
+			if char == empty {
 				return "", ErrInvalidString
 			}
 
 			updateResult(&sb, number, char)
-			char = '\n'
+			char = empty
 		case number == 0 && err == nil:
 			// число пришло раньше буквы
-			if char == '\n' {
+			if char == empty {
 				return "", ErrInvalidString
 			}
 			// поймали 0 в строке - не добавляем текущий символ в результат
-			char = '\n'
+			char = empty
 		default:
 			// добавляем букву в результат 1 раз, если к этому моменту не указано число повторений
-			if char != '\n' {
+			if char != empty {
 				updateResult(&sb, 1, char)
 			}
 
@@ -56,7 +58,7 @@ func Unpack(input string) (string, error) {
 		}
 	}
 	// обработка последней буквы в строке
-	if char != '\n' {
+	if char != empty {
 		updateResult(&sb, 1, char)
 	}
 
