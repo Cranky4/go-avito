@@ -17,12 +17,12 @@ type lruCache struct {
 func (c *lruCache) Set(key Key, value interface{}) bool {
 	_, exists := c.items[key]
 	if exists {
-		(*c.items[key]).Value = cacheItem{value: value, key: key}
+		c.items[key].Value = cacheItem{value: value, key: key}
 		c.queue.MoveToFront(c.items[key])
 	} else {
 		if c.queue.Len() == c.capacity {
 			value := c.queue.Back()
-			cacheItem, ok := (*value).Value.(cacheItem)
+			cacheItem, ok := value.Value.(cacheItem)
 
 			if ok {
 				delete(c.items, cacheItem.key)
@@ -38,7 +38,7 @@ func (c *lruCache) Get(key Key) (interface{}, bool) {
 	value, exists := c.items[key]
 
 	if exists {
-		cacheItem, ok := (*value).Value.(cacheItem)
+		cacheItem, ok := value.Value.(cacheItem)
 
 		if ok {
 			return cacheItem.value, true
