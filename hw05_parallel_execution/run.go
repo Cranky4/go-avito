@@ -7,12 +7,14 @@ import (
 
 type Task func() error
 
-var ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
-var ErrZeroConsumersCount = errors.New("zero consumers count")
-var mu sync.RWMutex
-var currentErrorsCount, maxErrorsCount int
-var terminateSignal chan struct{}
-var errorState bool
+var (
+	ErrErrorsLimitExceeded             = errors.New("errors limit exceeded")
+	ErrZeroConsumersCount              = errors.New("zero consumers count")
+	mu                                 sync.RWMutex
+	currentErrorsCount, maxErrorsCount int
+	terminateSignal                    chan struct{}
+	errorState                         bool
+)
 
 // Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
 func Run(tasks []Task, n, m int) error {
