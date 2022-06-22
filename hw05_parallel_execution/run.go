@@ -8,125 +8,74 @@ import (
 type Task func() error
 
 var (
-	ErrErrorsLimitExceeded             = errors.New("errors limit exceeded")
-	ErrZeroConsumersCount              = errors.New("zero consumers count")
-	mu                                 sync.RWMutex
-	currentErrorsCount, maxErrorsCount int
-	terminateSignal                    chan struct{}
-	errorState                         bool
+	ErrErrorsLimitExceeded = errors.New("errors limit exceeded")
+	mu                     sync.RWMutex
 )
 
-// Run starts tasks in n goroutines and stops its work when receiving m errors from tasks.
 func Run(tasks []Task, n, m int) error {
-	// Init
-	errorState = false
-	if m == 0 {
-		return ErrErrorsLimitExceeded
-	}
-	if n == 0 {
-		return ErrZeroConsumersCount
-	}
-
-	maxErrorsCount = m
-	terminateSignal = make(chan struct{}, 1)
-	defer close(terminateSignal)
-
 	wg := sync.WaitGroup{}
 
-	// Init producer
-	queue := make(chan Task, n)
+	taskQueue := make(chan Task, n)
+	currentErrors := 0
+	terminateSignal := make(chan struct{}, 1)
 
+	// Producer
 	wg.Add(1)
 	go func() {
-		defer wg.Done()
-		producer(queue, tasks)
+		wg.Done()
+		producer(taskQueue, tasks, terminateSignal)
 	}()
 
-	// Init consumers
+	// Consumers
 	for i := 0; i < n; i++ {
 		wg.Add(1)
 		go func() {
-			defer wg.Done()
-
-			consumer(queue)
+			consumer(taskQueue, &currentErrors, &m, terminateSignal)
+			wg.Done()
 		}()
 	}
 
-	// Wait until done
 	wg.Wait()
 
-	if errorState {
+	if currentErrors >= m {
 		return ErrErrorsLimitExceeded
 	}
 
 	return nil
 }
 
-func producer(queue chan<- Task, tasks []Task) {
+func producer(taskQueue chan<- Task, tasks []Task, terminateSignal <-chan struct{}) {
 L:
 	for {
-		// Priority
 		select {
-		case <-terminateSignal:
-			break L
-
-		default:
-		}
-
-		// Trying push task to queue
-		task := tasks[0]
-		if task == nil {
-			break L
-		}
-
-		select {
-		case queue <- task:
-			if len(tasks) > 1 {
-				tasks = tasks[1:]
-			} else {
+		case taskQueue <- tasks[0]:
+			if len(tasks) == 1 {
 				break L
 			}
+			tasks = tasks[1:]
 		case <-terminateSignal:
 			break L
-		default:
 		}
 	}
 
-	close(queue)
+	close(taskQueue)
 }
 
-func consumer(queue <-chan Task) {
-	for task := range queue {
-		err := task()
+func consumer(taskQueue <-chan Task, currentErrors *int, maxErrors *int, terminateSignal chan<- struct{}) {
+	for task := range taskQueue {
+		if task() != nil {
+			mu.Lock()
+			*(currentErrors)++
+			errorState := *(currentErrors) >= *(maxErrors)
+			mu.Unlock()
 
-		if err != nil && checkErrorState() {
-			return
+			if errorState {
+				select {
+				case terminateSignal <- struct{}{}:
+				default:
+				}
+				break
+			}
 		}
 	}
-}
-
-func checkErrorState() bool {
-	mu.Lock()
-	currentErrorsCount++
-	mu.Unlock()
-
-	mu.RLock()
-	tooManyErrors := currentErrorsCount >= maxErrorsCount
-	mu.RUnlock()
-
-	if tooManyErrors {
-		mu.Lock()
-		errorState = true
-		mu.Unlock()
-
-		// Non blocking
-		select {
-		case terminateSignal <- struct{}{}:
-		default:
-		}
-
-		return true
-	}
-
-	return false
 }
