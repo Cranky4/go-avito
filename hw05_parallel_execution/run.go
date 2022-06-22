@@ -37,7 +37,8 @@ func Run(tasks []Task, n, m int) error {
 
 	wg.Wait()
 
-	if currentErrors >= m {
+	errorStatement := currentErrors >= m // ругается на ifshort если условие вставить в if
+	if errorStatement {
 		return ErrErrorsLimitExceeded
 	}
 
