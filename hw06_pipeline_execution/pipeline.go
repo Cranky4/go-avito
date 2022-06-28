@@ -9,8 +9,11 @@ type (
 type Stage func(in In) (out Out)
 
 func ExecutePipeline(in In, done In, stages ...Stage) Out {
-	for i := 0; i < len(stages); i++ {
-		in = stages[i](proxyInput(in, done))
+	for _, stage := range stages {
+		if stage == nil {
+			continue
+		}
+		in = stage(proxyInput(in, done))
 	}
 
 	return in
