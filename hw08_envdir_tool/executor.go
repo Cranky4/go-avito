@@ -12,12 +12,6 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 	params := cmd[1:]
 	command := exec.Command(c, params...)
 
-	// for key, value := range env {
-	// if value.NeedRemove {
-	// os.Unsetenv(key)
-	// }
-	// }
-
 	command.Env = append(command.Env, os.Environ()...)
 
 	for key, value := range env {
