@@ -49,7 +49,7 @@ func ReadDir(dir string) (Environment, error) {
 		}
 
 		value := string(line)
-		value = strings.Trim(value, "\t\n ")
+		value = strings.TrimRight(value, "\t\n ")
 		value = strings.ReplaceAll(value, "\x00", "\n")
 
 		if len(value) == 0 {

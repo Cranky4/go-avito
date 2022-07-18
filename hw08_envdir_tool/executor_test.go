@@ -11,7 +11,7 @@ func TestRunCmd(t *testing.T) {
 	t.Run(
 		"run SIMPLE_BACKUP_SUFFIX=@ VERSION_CONTROL=simple cp ./testdata/env/ADDED ./testdata/COPIED --backup",
 		func(t *testing.T) {
-			copyFrom := "./testdata/env/ADDED"
+			copyFrom := "./testdata/env/BAR"
 			copyTo := "./testdata/COPIED"
 			backupPrefix := "@"
 

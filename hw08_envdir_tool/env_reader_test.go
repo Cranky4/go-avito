@@ -13,10 +13,9 @@ func TestReadDir(t *testing.T) {
 		expectedMap := make(Environment)
 		expectedMap["BAR"] = EnvValue{Value: "bar", NeedRemove: false}
 		expectedMap["EMPTY"] = EnvValue{Value: "", NeedRemove: true}
-		expectedMap["FOO"] = EnvValue{Value: "foo\nwith new line", NeedRemove: false}
+		expectedMap["FOO"] = EnvValue{Value: "   foo\nwith new line", NeedRemove: false}
 		expectedMap["HELLO"] = EnvValue{Value: "\"hello\"", NeedRemove: false}
 		expectedMap["UNSET"] = EnvValue{Value: "", NeedRemove: true}
-		expectedMap["ADDED"] = EnvValue{Value: "123", NeedRemove: false}
 
 		require.Nil(t, err)
 		require.NotNil(t, environment)
