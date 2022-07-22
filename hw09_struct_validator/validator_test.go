@@ -82,7 +82,6 @@ func TestValidate(t *testing.T) {
 			expectedErr: ErrInvalidValidatorTagValue{},
 		},
 	}
-
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
 			tt := tt
@@ -95,7 +94,6 @@ func TestValidate(t *testing.T) {
 			_ = tt
 		})
 	}
-
 	// validation tests
 	validationTests := []struct {
 		in             interface{}
@@ -120,6 +118,7 @@ func TestValidate(t *testing.T) {
 				Email:  "john@smith.com",
 				Role:   "stuff",
 				Phones: []string{"88005553535"},
+				meta:   nil,
 			},
 			expectedErrors: "Age: cannot be less than 18, actual is 12\n",
 		},
@@ -159,7 +158,6 @@ func TestValidate(t *testing.T) {
 			expectedErrors: "Version: expected size is 5, actual is 14\n",
 		},
 	}
-
 	for i, tt := range validationTests {
 		t.Run(fmt.Sprintf("validation case %d", i), func(t *testing.T) {
 			tt := tt
@@ -173,7 +171,6 @@ func TestValidate(t *testing.T) {
 			_ = tt
 		})
 	}
-
 	// Valid data
 	validTests := []interface{}{
 		User{
@@ -197,7 +194,6 @@ func TestValidate(t *testing.T) {
 			Body: "OK",
 		},
 	}
-
 	for i, tt := range validTests {
 		t.Run(fmt.Sprintf("validation case %d", i), func(t *testing.T) {
 			tt := tt
