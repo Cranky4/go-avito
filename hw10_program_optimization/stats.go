@@ -1,12 +1,13 @@
 package hw10programoptimization
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"regexp"
 	"strings"
+
+	"github.com/mailru/easyjson"
 )
 
 type User struct {
@@ -39,11 +40,11 @@ func getUsers(r io.Reader) (result users, err error) {
 
 	lines := strings.Split(string(content), "\n")
 	for i, line := range lines {
-		var user User
-		if err = json.Unmarshal([]byte(line), &user); err != nil {
+		user := &User{}
+		if err = easyjson.Unmarshal([]byte(line), user); err != nil {
 			return
 		}
-		result[i] = user
+		result[i] = *user
 	}
 	return
 }
