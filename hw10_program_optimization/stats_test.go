@@ -6,9 +6,11 @@ package hw10programoptimization
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"testing"
 
+	"github.com/mailru/easyjson/jlexer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -39,6 +41,28 @@ func TestGetDomainStat(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, DomainStat{}, result)
 	})
+}
+
+func TestInvalidJson(t *testing.T) {
+	data := "\"Id\":1,\"Name\":\"Howard Mendoza\",\"Username\":\"0Oliver\",\"Email\":\"aliquid_qui_ea@Browsedrive.gov\",\"Phone\":\"6-866-899-36-79\",\"Password\":\"InAQJvsq\",\"Address\":\"Blackbird Place 25\"}"
+
+	result, err := GetDomainStat(bytes.NewBufferString(data), "com")
+
+	require.Nil(t, result)
+
+	var lexerErr *jlexer.LexerError
+	require.True(t, errors.As(err, &lexerErr))
+}
+
+func TestInvalidUserDomains(t *testing.T) {
+	data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"rowsedrivegov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}
+	{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"@rowsedrivegov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}
+	{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"@rowsedrive.gov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}`
+
+	result, err := GetDomainStat(bytes.NewBufferString(data), "gov")
+
+	require.Nil(t, err)
+	require.Equal(t, DomainStat{"rowsedrive.gov": 1}, result)
 }
 
 func BenchmarkGetDomainStat(b *testing.B) {

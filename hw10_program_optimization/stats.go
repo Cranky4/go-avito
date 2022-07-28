@@ -29,10 +29,7 @@ func GetDomainStat(r io.Reader, domain string) (DomainStat, error) {
 
 	result := make(DomainStat)
 
-	reg, err := regexp.Compile("\\." + domain)
-	if err != nil {
-		return nil, err
-	}
+	reg := regexp.MustCompile("\\." + domain)
 
 	user := &User{}
 	for fileScanner.Scan() {
