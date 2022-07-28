@@ -90,4 +90,52 @@ func TestPipeline(t *testing.T) {
 		require.Len(t, result, 0)
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
 	})
+
+	t.Run("one stage", func(t *testing.T) {
+		in := make(Bi)
+		data := []int{1, 2}
+
+		go func() {
+			for _, v := range data {
+				in <- v
+			}
+			close(in)
+		}()
+
+		stage := g("Long fn", func(v interface{}) interface{} {
+			time.Sleep(time.Millisecond * 600)
+			return v.(int) * 2
+		})
+
+		result := make([]int, 0, 10)
+		start := time.Now()
+		for s := range ExecutePipeline(in, nil, stage) {
+			result = append(result, s.(int))
+		}
+		elapsed := time.Since(start)
+
+		require.Len(t, result, 2)
+		require.Greater(t, int64(elapsed), int64(time.Second))
+		require.Equal(t, []int{2, 4}, result)
+	})
+
+	t.Run("empty stage", func(t *testing.T) {
+		in := make(Bi)
+		data := []int{1, 2}
+
+		go func() {
+			for _, v := range data {
+				in <- v
+			}
+			close(in)
+		}()
+
+		result := make([]int, 0, 10)
+		for s := range ExecutePipeline(in, nil, nil) {
+			result = append(result, s.(int))
+		}
+
+		require.Len(t, result, 2)
+		require.Equal(t, []int{1, 2}, result)
+	})
 }
