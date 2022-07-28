@@ -1,7 +1,0 @@
-goos: linux
-goarch: amd64
-pkg: github.com/Cranky4/go-avito/hw10_program_optimization
-cpu: AMD Ryzen 7 5800H with Radeon Graphics         
-BenchmarkGetDomainStat-16    	1000000000	         0.5370 ns/op	       0 B/op	       0 allocs/op
-PASS
-ok  	github.com/Cranky4/go-avito/hw10_program_optimization	14.389s

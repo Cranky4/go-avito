@@ -10,7 +10,7 @@ import (
 	"github.com/mailru/easyjson"
 )
 
-// easyjson -all stats.go
+// easyjson -all stats.go.
 type User struct {
 	ID       int
 	Name     string
