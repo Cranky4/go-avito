@@ -56,7 +56,9 @@ func (c *ZTelnetClient) Send() error {
 
 	bytes := c.inScanner.Bytes()
 	bytes = append(bytes, '\n')
-	c.connection.Write(bytes)
+	if _, err := c.connection.Write(bytes); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -70,7 +72,9 @@ func (c *ZTelnetClient) Receive() error {
 
 	bytes := c.connectionScanner.Bytes()
 	bytes = append(bytes, '\n')
-	c.out.Write(bytes)
+	if _, err := c.out.Write(bytes); err != nil {
+		return err
+	}
 	return nil
 }
 
