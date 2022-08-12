@@ -1,5 +1,8 @@
 [logger]
 level = "INFO"
 
-# TODO
-# ...
+[storage]
+driver = "sql" # memory, sql
+
+[database] # используется только при driver=sql
+dsn = "postgres://calendar_user:secret@localhost:55432/calendar"
