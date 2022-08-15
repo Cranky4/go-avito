@@ -210,7 +210,7 @@ func (s *Storage) UpdateEvent(id storage.EventID, event storage.Event) error {
 	return nil
 }
 
-func (s *Storage) GetEvents(periodStartsAt, periodEndsAt time.Time) ([]storage.Event, error) {
+func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error) {
 	err := s.ensureConnected()
 	if err != nil {
 		return []storage.Event{}, err
@@ -222,7 +222,7 @@ func (s *Storage) GetEvents(periodStartsAt, periodEndsAt time.Time) ([]storage.E
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(s.context, periodStartsAt, periodEndsAt)
+	rows, err := stmt.QueryContext(s.context, dateFrom, dateTo)
 	if err != nil {
 		return []storage.Event{}, err
 	}
@@ -276,6 +276,21 @@ func (s *Storage) GetMonthEvents(date time.Time) ([]storage.Event, error) {
 	toDate := fromDate.AddDate(0, 1, 0)
 
 	return s.GetEvents(fromDate, toDate)
+}
+
+func (s *Storage) DeleteEvent(id storage.EventID) error {
+	err := s.ensureConnected()
+	if err != nil {
+		return err
+	}
+
+	err = s.execTransactionally("DELETE FROM events WHERE id=$1", id.String())
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (s *Storage) execTransactionally(query string, params ...interface{}) error {

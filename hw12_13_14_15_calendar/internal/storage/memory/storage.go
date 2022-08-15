@@ -32,9 +32,7 @@ func (s *Storage) CreateEvent(event storage.Event) error {
 }
 
 func (s *Storage) UpdateEvent(id storage.EventID, event storage.Event) error {
-	event, exists := s.events[id]
-
-	if !exists {
+	if _, exists := s.events[id]; !exists {
 		return storage.ErrEventNotFound
 	}
 
@@ -63,7 +61,7 @@ func (s *Storage) DeleteEvent(id storage.EventID) error {
 	return nil
 }
 
-func (s *Storage) GetEvents(dateFrom, dateTo time.Time) []storage.Event {
+func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error) {
 	var list []storage.Event
 
 	for _, event := range s.events {
@@ -72,7 +70,7 @@ func (s *Storage) GetEvents(dateFrom, dateTo time.Time) []storage.Event {
 		}
 	}
 
-	return list
+	return list, nil
 }
 
 func (s *Storage) GetEvent(id storage.EventID) (storage.Event, error) {
@@ -90,7 +88,7 @@ func (s *Storage) GetDayEvents(date time.Time) ([]storage.Event, error) {
 	fromDate := time.Date(year, month, day, 0, 0, 0, 0, date.Location())
 	toDate := time.Date(year, month, day, 23, 59, 59, 0, date.Location())
 
-	return s.GetEvents(fromDate, toDate), nil
+	return s.GetEvents(fromDate, toDate)
 }
 
 func (s *Storage) GetWeekEvents(date time.Time) ([]storage.Event, error) {
@@ -99,7 +97,7 @@ func (s *Storage) GetWeekEvents(date time.Time) ([]storage.Event, error) {
 	fromDate := time.Date(year, month, day, 0, 0, 0, 0, date.Location())
 	toDate := fromDate.AddDate(0, 0, 7)
 
-	return s.GetEvents(fromDate, toDate), nil
+	return s.GetEvents(fromDate, toDate)
 }
 
 func (s *Storage) GetMonthEvents(date time.Time) ([]storage.Event, error) {
@@ -108,7 +106,7 @@ func (s *Storage) GetMonthEvents(date time.Time) ([]storage.Event, error) {
 	fromDate := time.Date(year, month, day, 0, 0, 0, 0, date.Location())
 	toDate := fromDate.AddDate(0, 1, 0)
 
-	return s.GetEvents(fromDate, toDate), nil
+	return s.GetEvents(fromDate, toDate)
 }
 
 func (s *Storage) IsPeriodBusy(dateFrom, dateTo time.Time, excludeIds []string) (bool, error) {

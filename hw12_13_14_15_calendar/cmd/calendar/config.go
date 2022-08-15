@@ -13,6 +13,7 @@ type Config struct {
 	Logger   LoggerConf
 	Storage  StorageConf
 	Database DatabaseConf
+	HTTP     HTTPConf
 }
 
 type LoggerConf struct {
@@ -21,6 +22,10 @@ type LoggerConf struct {
 
 type DatabaseConf struct {
 	Dsn string
+}
+
+type HTTPConf struct {
+	Addr string
 }
 
 type StorageDriver string
