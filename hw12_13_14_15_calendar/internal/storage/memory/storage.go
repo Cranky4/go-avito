@@ -8,7 +8,7 @@ import (
 )
 
 type Storage struct {
-	_      sync.RWMutex // TODO: накрутить локов
+	lock   sync.RWMutex
 	events map[storage.EventID]storage.Event
 }
 
@@ -26,7 +26,9 @@ func (s *Storage) CreateEvent(event storage.Event) error {
 	if isBusy {
 		return storage.ErrDateBusy
 	}
+	s.lock.Lock()
 	s.events[event.ID] = event
+	s.lock.Unlock()
 
 	return nil
 }
@@ -45,7 +47,10 @@ func (s *Storage) UpdateEvent(id storage.EventID, event storage.Event) error {
 	}
 
 	event.ID = id
+
+	s.lock.Lock()
 	s.events[id] = event
+	s.lock.Unlock()
 
 	return nil
 }
@@ -56,7 +61,9 @@ func (s *Storage) DeleteEvent(id storage.EventID) error {
 	if !exists {
 		return storage.ErrEventNotFound
 	}
+	s.lock.Lock()
 	delete(s.events, event.ID)
+	s.lock.Unlock()
 
 	return nil
 }
@@ -116,12 +123,16 @@ func (s *Storage) IsPeriodBusy(dateFrom, dateTo time.Time, excludeIds []string) 
 		excludeIdsMap[id] = 1
 	}
 
+	s.lock.RLock()
 	for _, event := range s.events {
 		_, excluded := excludeIdsMap[event.ID.String()]
 
 		if !(event.EndsAt.Before(dateFrom) || event.StartsAt.After(dateTo)) && !excluded {
+			s.lock.RUnlock()
 			return true, nil
 		}
 	}
+
+	s.lock.RUnlock()
 	return false, nil
 }
