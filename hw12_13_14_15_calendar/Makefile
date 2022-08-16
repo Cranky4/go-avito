@@ -65,3 +65,11 @@ migrate: install-goose
 
 migrate-down: install-goose	
 	 goose -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" down
+
+install-protobuf:
+	go install google.golang.org/protobuf/cmd/protoc-gen-go
+	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
+
+
+generate:
+	protoc ./api/EventService.proto --go_out=./api --go-grpc_out=./api
