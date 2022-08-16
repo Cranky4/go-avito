@@ -32,7 +32,7 @@ test:
 	go test -race ./internal/... ./pkg/...
 
 install-lint-deps:
-	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.41.1
+	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.48
 
 lint: install-lint-deps
 	golangci-lint run ./...
@@ -47,20 +47,21 @@ build-database-img:
 		-e POSTGRES_PASSWORD=${DATABASE_PASSWORD} \
 		-p "${DATABASE_PORT}:5432" \
 		postgres:14-alpine
-
 start-database-img:
 	docker start ${DATABASE_DOCKER_IMG_NAME}
 stop-database-img:
 	docker stop ${DATABASE_DOCKER_IMG_NAME}
 
-migrate-status:
-	 ${GOOSE_PATH} -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" status
+install-goose:
+	(which goose > /dev/null) || go install github.com/pressly/goose/v3/cmd/goose@latest
+migrate-status: install-goose
+	 goose -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" status
 
-migrate-create:
-	 ${GOOSE_PATH} -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" create calendar sql
+migrate-create: install-goose
+	 goose -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" create calendar sql
 
-migrate-up:
-	 ${GOOSE_PATH} -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" up
+migrate: install-goose
+	 goose -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" up
 
-migrate-down:
-	 ${GOOSE_PATH} -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" down
+migrate-down: install-goose	
+	 goose -dir ./migrations postgres "user=${DATABASE_USER} password=${DATABASE_PASSWORD} dbname=${DATABASE_NAME} port=${DATABASE_PORT} sslmode=disable" down
