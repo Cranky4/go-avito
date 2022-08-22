@@ -1,11 +1,16 @@
+//go:build !bench
 // +build !bench
 
 package hw10programoptimization
 
 import (
+	"archive/zip"
 	"bytes"
+	"errors"
+	"fmt"
 	"testing"
 
+	"github.com/mailru/easyjson/jlexer"
 	"github.com/stretchr/testify/require"
 )
 
@@ -37,3 +42,43 @@ func TestGetDomainStat(t *testing.T) {
 		require.Equal(t, DomainStat{}, result)
 	})
 }
+
+func TestInvalidJson(t *testing.T) {
+	data := "\"Id\":1,\"Name\":\"Howard Mendoza\",\"Username\":\"0Oliver\",\"Email\":\"aliquid_qui_ea@Browsedrive.gov\",\"Phone\":\"6-866-899-36-79\",\"Password\":\"InAQJvsq\",\"Address\":\"Blackbird Place 25\"}"
+
+	result, err := GetDomainStat(bytes.NewBufferString(data), "com")
+
+	require.Nil(t, result)
+
+	var lexerErr *jlexer.LexerError
+	require.True(t, errors.As(err, &lexerErr))
+}
+
+func TestInvalidUserDomains(t *testing.T) {
+	data := `{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"rowsedrivegov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}
+	{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"@rowsedrivegov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}
+	{"Id":1,"Name":"Howard Mendoza","Username":"0Oliver","Email":"@rowsedrive.gov","Phone":"6-866-899-36-79","Password":"InAQJvsq","Address":"Blackbird Place 25"}`
+
+	result, err := GetDomainStat(bytes.NewBufferString(data), "gov")
+
+	require.Nil(t, err)
+	require.Equal(t, DomainStat{"rowsedrive.gov": 1}, result)
+}
+
+func BenchmarkGetDomainStat(b *testing.B) {
+	r, _ := zip.OpenReader("./testdata/users.dat.zip")
+	data, err := r.File[0].Open()
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
+
+	GetDomainStat(data, "biz")
+	r.Close()
+}
+
+// go test -bench=BenchmarkGetDomainStat -benchmem | tee old
+// ~/go/bin/benchstat old new
+
+// go test -bench=BenchmarkGetDomainStat -cpuprofile=cpu.out -memprofile=mem.out .
+// go tool pprof -http=":9090" hw10_program_optimization.test cpu.out
