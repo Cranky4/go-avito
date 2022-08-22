@@ -2,8 +2,11 @@ package hw09structvalidator
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type UserRole string
@@ -34,18 +37,50 @@ type (
 		Code int    `validate:"in:200,404,500"`
 		Body string `json:"omitempty"`
 	}
+
+	InvalidValidatorTag struct {
+		Code int `validate:"zz:200,404,500"`
+	}
+
+	InvalidLenTag struct {
+		Code int `validate:"len:ten"`
+	}
+
+	InvalidMaxTag struct {
+		Code int `validate:"max:six"`
+	}
+
+	InvalidMinTag struct {
+		Code int `validate:"min:seven"`
+	}
 )
 
 func TestValidate(t *testing.T) {
+	// invalid params
 	tests := []struct {
 		in          interface{}
 		expectedErr error
 	}{
 		{
-			// Place your code here.
+			in:          "unexpected_string",
+			expectedErr: ErrInvalidInputArgument,
 		},
-		// ...
-		// Place your code here.
+		{
+			in:          InvalidValidatorTag{Code: 415},
+			expectedErr: ErrInvalidValidatorTag{},
+		},
+		{
+			in:          InvalidLenTag{Code: 415},
+			expectedErr: ErrInvalidValidatorTagValue{},
+		},
+		{
+			in:          InvalidMaxTag{Code: 415},
+			expectedErr: ErrInvalidValidatorTagValue{},
+		},
+		{
+			in:          InvalidMinTag{Code: 415},
+			expectedErr: ErrInvalidValidatorTagValue{},
+		},
 	}
 
 	for i, tt := range tests {
@@ -53,7 +88,125 @@ func TestValidate(t *testing.T) {
 			tt := tt
 			t.Parallel()
 
-			// Place your code here.
+			err := Validate(tt.in)
+
+			assert.True(t, errors.As(err, &tt.expectedErr))
+
+			_ = tt
+		})
+	}
+
+	// validation tests
+	validationTests := []struct {
+		in             interface{}
+		expectedErrors string
+	}{
+		{
+			in: User{
+				ID:     "short-id", // too short
+				Name:   "John",
+				Age:    32,
+				Email:  "john@smith", // invalid
+				Role:   "admin",
+				Phones: []string{"88005553535"},
+			},
+			expectedErrors: "ID: expected size is 36, actual is 8\nEmail: invalid format for john@smith\n",
+		},
+		{
+			in: User{
+				ID:     "5f56fb38-4ba3-40b3-98d8-3119c7061a86",
+				Name:   "John",
+				Age:    12, // too young
+				Email:  "john@smith.com",
+				Role:   "stuff",
+				Phones: []string{"88005553535"},
+			},
+			expectedErrors: "Age: cannot be less than 18, actual is 12\n",
+		},
+		{
+			in: User{
+				ID:     "5f56fb38-4ba3-40b3-98d8-3119c7061a86",
+				Name:   "John",
+				Age:    99, // too old
+				Email:  "john@smith.com",
+				Role:   "stuff",
+				Phones: []string{"880055535"}, // too short
+			},
+			expectedErrors: "Age: cannot be greater than 50, actual is 99\nPhones[0]: expected size is 11, actual is 9\n",
+		},
+		{
+			in: User{
+				ID:     "5f56fb38-4ba3-40b3-98d8-3119c7061a86",
+				Name:   "John",
+				Age:    33,
+				Email:  "john@smith.com",
+				Role:   "customer", // invalid
+				Phones: []string{"88005553535"},
+			},
+			expectedErrors: "Role: must be one of [admin stuff], actual is customer\n",
+		},
+		{
+			in: Response{
+				Code: 232,
+				Body: "What?",
+			},
+			expectedErrors: "Code: must be one of [200 404 500], actual is 232\n",
+		},
+		{
+			in: App{
+				Version: "v1.23.23-alpha",
+			},
+			expectedErrors: "Version: expected size is 5, actual is 14\n",
+		},
+	}
+
+	for i, tt := range validationTests {
+		t.Run(fmt.Sprintf("validation case %d", i), func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+
+			err := Validate(tt.in)
+
+			assert.True(t, errors.As(err, &ValidationErrors{}))
+			assert.Equal(t, tt.expectedErrors, err.Error())
+
+			_ = tt
+		})
+	}
+
+	// Valid data
+	validTests := []interface{}{
+		User{
+			ID:     "5f56fb38-4ba3-40b3-98d8-3119c7061a86",
+			Name:   "John",
+			Age:    32,
+			Email:  "john@smith.com",
+			Role:   "admin",
+			Phones: []string{"88005553535"},
+		},
+		App{
+			Version: "1.0.1",
+		},
+		Token{
+			Header:    []byte("Header"),
+			Payload:   []byte("Payload"),
+			Signature: []byte("Signature"),
+		},
+		Response{
+			Code: 200,
+			Body: "OK",
+		},
+	}
+
+	for i, tt := range validTests {
+		t.Run(fmt.Sprintf("validation case %d", i), func(t *testing.T) {
+			tt := tt
+			t.Parallel()
+
+			err := Validate(tt)
+
+			assert.Nil(t, err)
+
 			_ = tt
 		})
 	}
