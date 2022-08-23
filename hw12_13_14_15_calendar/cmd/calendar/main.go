@@ -51,7 +51,7 @@ func main() {
 
 	var server *internalhttp.Server
 	go func() {
-		server = internalhttp.NewServer(logg, calendar, config.HTTP.Addr)
+		server = internalhttp.NewServer(logg, calendar, config.HTTP.Addr, config.HTTP.RequestLogFile)
 		if err := server.Start(ctx); err != nil {
 			logg.Error("failed to start http server: " + err.Error())
 			cancel()
