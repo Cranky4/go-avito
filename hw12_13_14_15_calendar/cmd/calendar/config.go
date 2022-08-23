@@ -32,7 +32,7 @@ type HTTPConf struct {
 type StorageDriver string
 
 type GrpcConf struct {
-	Addr string
+	Addr, RequestLogFile string
 }
 
 const (

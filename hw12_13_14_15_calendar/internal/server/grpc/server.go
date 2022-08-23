@@ -1,9 +1,11 @@
-package internalhttp
+package internalgrpc
 
 import (
 	"context"
 	"fmt"
+	"log"
 	"net"
+	"os"
 
 	pb "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/api/EventService"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/app"
@@ -12,13 +14,15 @@ import (
 
 type Server struct {
 	pb.UnimplementedEventServiceServer
-	grpcServer *grpc.Server
-	logger     Logger
-	app        *app.App
+	grpcServer        *grpc.Server
+	logger            Logger
+	app               *app.App
+	requestLogFile    string
+	requestLogHandler *os.File
 }
 
-func New(app *app.App, logg Logger) *Server {
-	return &Server{app: app, logger: logg}
+func New(app *app.App, logg Logger, requestLogFile string) *Server {
+	return &Server{app: app, logger: logg, requestLogFile: requestLogFile}
 }
 
 type Logger interface {
@@ -35,7 +39,13 @@ func (s *Server) Start(ctx context.Context, addr string) error {
 	opts := []grpc.ServerOption{}
 	s.grpcServer = grpc.NewServer(opts...)
 
-	handler, err := NewHandler(s.app)
+	file, err := os.Create(s.requestLogFile)
+	if err != nil {
+		return err
+	}
+	logger := log.New(file, "", log.Ldate|log.Ltime|log.Lshortfile)
+
+	handler, err := NewHandler(s.app, logger)
 	if err != nil {
 		return err
 	}
@@ -50,5 +60,6 @@ func (s *Server) Start(ctx context.Context, addr string) error {
 
 func (s *Server) Stop(ctx context.Context) {
 	s.grpcServer.Stop()
+	s.requestLogHandler.Close()
 	s.logger.Info("grpc server stopped")
 }

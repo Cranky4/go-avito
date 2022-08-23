@@ -61,7 +61,7 @@ func main() {
 
 	var grpcServer *internalgrpc.Server
 	go func() {
-		grpcServer = internalgrpc.New(calendar, logg)
+		grpcServer = internalgrpc.New(calendar, logg, config.GRPC.RequestLogFile)
 		if err := grpcServer.Start(ctx, config.GRPC.Addr); err != nil {
 			logg.Error("failed to start grpc server: " + err.Error())
 			cancel()

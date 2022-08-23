@@ -1,7 +1,8 @@
-package internalhttp
+package internalgrpc
 
 import (
 	"context"
+	"log"
 
 	pb "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/api/EventService"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/app"
@@ -14,14 +15,17 @@ type Handler = pb.EventServiceServer
 
 type handler struct {
 	pb.UnimplementedEventServiceServer
-	app *app.App
+	app  *app.App
+	logg *log.Logger
 }
 
-func NewHandler(app *app.App) (Handler, error) {
-	return &handler{app: app}, nil
+func NewHandler(app *app.App, logger *log.Logger) (Handler, error) {
+	return &handler{app: app, logg: logger}, nil
 }
 
 func (h *handler) CreateEvent(ctx context.Context, r *(pb.CreateEventRequest)) (*emptypb.Empty, error) {
+	h.logg.Printf("%#v", r)
+
 	eventID, err := storage.NewEventIDFromString(r.Id)
 	if err != nil {
 		return nil, err
@@ -39,6 +43,8 @@ func (h *handler) CreateEvent(ctx context.Context, r *(pb.CreateEventRequest)) (
 }
 
 func (h *handler) UpdateEvent(ctx context.Context, r *(pb.UpdateEventRequest)) (*emptypb.Empty, error) {
+	h.logg.Printf("%v", r)
+
 	eventID, err := storage.NewEventIDFromString(r.Id)
 	if err != nil {
 		return nil, err
@@ -56,6 +62,8 @@ func (h *handler) UpdateEvent(ctx context.Context, r *(pb.UpdateEventRequest)) (
 }
 
 func (h *handler) DeleteEvent(ctx context.Context, r *pb.DeleteEventRequest) (*emptypb.Empty, error) {
+	h.logg.Printf("%v", r)
+
 	eventID, err := storage.NewEventIDFromString(r.Id)
 	if err != nil {
 		return nil, err
@@ -67,8 +75,9 @@ func (h *handler) DeleteEvent(ctx context.Context, r *pb.DeleteEventRequest) (*e
 }
 
 func (h *handler) GetDayEvents(ctx context.Context, r *timestamppb.Timestamp) (*pb.EventsResponse, error) {
-	evs, err := h.app.GetDayEvents(ctx, r.AsTime())
+	h.logg.Printf("%v", r)
 
+	evs, err := h.app.GetDayEvents(ctx, r.AsTime())
 	events := make([]*pb.Event, 0, len(evs))
 
 	for _, e := range evs {
@@ -88,8 +97,9 @@ func (h *handler) GetDayEvents(ctx context.Context, r *timestamppb.Timestamp) (*
 }
 
 func (h *handler) GetWeekEvents(ctx context.Context, r *timestamppb.Timestamp) (*pb.EventsResponse, error) {
-	evs, err := h.app.GetWeekEvents(ctx, r.AsTime())
+	h.logg.Printf("%v", r)
 
+	evs, err := h.app.GetWeekEvents(ctx, r.AsTime())
 	events := make([]*pb.Event, 0, len(evs))
 
 	for _, e := range evs {
@@ -109,8 +119,9 @@ func (h *handler) GetWeekEvents(ctx context.Context, r *timestamppb.Timestamp) (
 }
 
 func (h *handler) GetMonthEvents(ctx context.Context, r *timestamppb.Timestamp) (*pb.EventsResponse, error) {
-	evs, err := h.app.GetMonthEvents(ctx, r.AsTime())
+	h.logg.Printf("%v", r)
 
+	evs, err := h.app.GetMonthEvents(ctx, r.AsTime())
 	events := make([]*pb.Event, 0, len(evs))
 
 	for _, e := range evs {
