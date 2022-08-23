@@ -26,7 +26,7 @@ type DatabaseConf struct {
 }
 
 type HTTPConf struct {
-	Addr string
+	Addr, RequestLogFile string
 }
 
 type StorageDriver string

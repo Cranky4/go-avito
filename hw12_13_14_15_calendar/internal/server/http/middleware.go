@@ -3,7 +3,6 @@ package internalhttp
 import (
 	"log"
 	"net/http"
-	"os"
 	"time"
 )
 
@@ -17,15 +16,8 @@ func (r *StatusRecorder) WriteHeader(status int) {
 	r.ResponseWriter.WriteHeader(status)
 }
 
-func loggingMiddleware(next http.Handler) http.Handler {
+func loggingMiddleware(next http.Handler, logger *log.Logger) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		file, err := os.OpenFile("./logs/http-server.log", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o644)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer file.Close()
-		log.SetOutput(file)
-
 		recorder := &StatusRecorder{
 			ResponseWriter: w,
 			Status:         200,
@@ -35,7 +27,7 @@ func loggingMiddleware(next http.Handler) http.Handler {
 		next.ServeHTTP(recorder, r)
 		finished := time.Now()
 
-		log.Printf(
+		logger.Printf(
 			"%s [%s] %s %s?%s %s %d %d \"%s\"",
 			r.RemoteAddr,
 			time.Now().Format(time.RFC822Z),
