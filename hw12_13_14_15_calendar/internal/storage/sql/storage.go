@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -162,12 +163,19 @@ func (s *Storage) GetEvent(id storage.EventID) (storage.Event, error) {
 	var title string
 	var startsAt, endsAt time.Time
 
+	found := false
+
 	if rows.Next() {
 		err = rows.Scan(&title, &startsAt, &endsAt)
 		if err != nil {
 			return storage.Event{}, err
 		}
 		defer rows.Close()
+		found = true
+	}
+
+	if !found {
+		return storage.Event{}, storage.ErrEventNotFound
 	}
 
 	return storage.Event{
@@ -217,7 +225,8 @@ func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error)
 		return []storage.Event{}, err
 	}
 
-	stmt, err := s.db.Prepare("SELECT id, title, starts_at, ends_at FROM events WHERE starts_at >= $1 AND starts_at <= $2")
+	fmt.Printf("%#v %#v", dateFrom, dateTo)
+	stmt, err := s.db.Prepare("SELECT id, title, starts_at, ends_at FROM events WHERE starts_at >= $1 AND starts_at < $2")
 	if err != nil {
 		return []storage.Event{}, err
 	}
@@ -237,15 +246,20 @@ func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error)
 	var title string
 	var startsAt, endsAt time.Time
 
-	if rows.Next() {
+	for rows.Next() {
 		err = rows.Scan(&id, &title, &startsAt, &endsAt)
 		if err != nil {
 			return []storage.Event{}, err
 		}
 		defer rows.Close()
 
+		eventID, err := storage.NewEventIDFromString(id)
+		if err != nil {
+			return []storage.Event{}, err
+		}
+
 		events = append(events, storage.Event{
-			ID:       storage.NewEventIDFromString(id),
+			ID:       eventID,
 			Title:    title,
 			StartsAt: startsAt,
 			EndsAt:   endsAt,
@@ -282,6 +296,10 @@ func (s *Storage) GetMonthEvents(date time.Time) ([]storage.Event, error) {
 func (s *Storage) DeleteEvent(id storage.EventID) error {
 	err := s.ensureConnected()
 	if err != nil {
+		return err
+	}
+
+	if _, err = s.GetEvent(id); err != nil {
 		return err
 	}
 

@@ -14,6 +14,7 @@ type Config struct {
 	Storage  StorageConf
 	Database DatabaseConf
 	HTTP     HTTPConf
+	GRPC     GrpcConf
 }
 
 type LoggerConf struct {
@@ -29,6 +30,10 @@ type HTTPConf struct {
 }
 
 type StorageDriver string
+
+type GrpcConf struct {
+	Addr string
+}
 
 const (
 	_          StorageDriver = "memory"
