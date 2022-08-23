@@ -68,6 +68,7 @@ func (s *Server) Start(ctx context.Context) error {
 
 func (s *Server) Stop(ctx context.Context) error {
 	s.httpServer.Close()
+	s.requestLogFileHandler.Close()
 	s.logger.Info("http server stopped...")
 
 	return nil
