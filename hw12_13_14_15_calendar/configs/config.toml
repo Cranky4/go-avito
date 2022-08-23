@@ -9,4 +9,4 @@ dsn = "postgres://calendar_user:secret@localhost:55432/calendar"
 
 [http]
 addr = ":8080"
-requestLogFile = "/logs/http-server.log"
+requestLogFile = "./logs/http-server.log"
