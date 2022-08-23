@@ -3,12 +3,11 @@ package internalhttp
 import (
 	"context"
 
+	pb "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/api/EventService"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/app"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/storage"
 	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	pb "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/api/EventService"
 )
 
 type Handler = pb.EventServiceServer

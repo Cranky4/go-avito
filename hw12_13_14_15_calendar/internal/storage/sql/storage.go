@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -225,7 +224,6 @@ func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error)
 		return []storage.Event{}, err
 	}
 
-	fmt.Printf("%#v %#v", dateFrom, dateTo)
 	stmt, err := s.db.Prepare("SELECT id, title, starts_at, ends_at FROM events WHERE starts_at >= $1 AND starts_at < $2")
 	if err != nil {
 		return []storage.Event{}, err

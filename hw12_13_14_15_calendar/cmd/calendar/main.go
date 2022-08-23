@@ -55,7 +55,7 @@ func main() {
 		if err := server.Start(ctx); err != nil {
 			logg.Error("failed to start http server: " + err.Error())
 			cancel()
-			os.Exit(1) //nolint:gocritic
+			os.Exit(1)
 		}
 	}()
 
@@ -63,9 +63,9 @@ func main() {
 	go func() {
 		grpcServer = internalgrpc.New(calendar, logg)
 		if err := grpcServer.Start(ctx, config.GRPC.Addr); err != nil {
-			cancel()
-			os.Exit(1) //nolint:gocritic
 			logg.Error("failed to start grpc server: " + err.Error())
+			cancel()
+			os.Exit(1)
 		}
 	}()
 

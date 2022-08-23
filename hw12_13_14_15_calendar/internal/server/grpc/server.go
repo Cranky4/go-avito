@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"net"
 
+	pb "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/api/EventService"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/app"
 	"google.golang.org/grpc"
-
-	pb "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/api/EventService"
 )
 
 type Server struct {
