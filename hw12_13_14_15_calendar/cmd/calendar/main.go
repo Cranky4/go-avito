@@ -48,7 +48,7 @@ func main() {
 
 	calendar := app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg, calendar, config.HTTP.Addr)
+	server := internalhttp.NewServer(logg, calendar, config.HTTP.Addr, config.HTTP.RequestLogFile)
 	server.Start(ctx)
 
 	go func() {

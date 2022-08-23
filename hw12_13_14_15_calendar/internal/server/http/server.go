@@ -3,16 +3,19 @@ package internalhttp
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/storage"
 )
 
 type Server struct {
-	logger     Logger
-	app        Application
-	httpServer *http.Server
+	logger                Logger
+	app                   Application
+	httpServer            *http.Server
+	requestLogFileHandler *os.File
 }
 
 type Logger interface {
@@ -29,11 +32,17 @@ type Application interface {
 	GetMonthEvents(ctx context.Context, date time.Time) ([]storage.Event, error)
 }
 
-func NewServer(logger Logger, app Application, addr string) *Server {
+func NewServer(logger Logger, app Application, addr, requestLogFile string) *Server {
 	handler := &httpHandler{}
 
+	file, err := os.OpenFile(requestLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o644)
+	if err != nil {
+		log.Fatal(err)
+	}
+	requestLogger := log.New(file, "", log.LstdFlags|log.Lshortfile)
+
 	mux := http.NewServeMux()
-	mux.Handle("/", loggingMiddleware(handler))
+	mux.Handle("/", loggingMiddleware(handler, requestLogger))
 
 	httpServer := &http.Server{
 		ReadHeaderTimeout: 3 * time.Second,
@@ -42,9 +51,10 @@ func NewServer(logger Logger, app Application, addr string) *Server {
 	}
 
 	return &Server{
-		logger:     logger,
-		app:        app,
-		httpServer: httpServer,
+		logger:                logger,
+		app:                   app,
+		httpServer:            httpServer,
+		requestLogFileHandler: file,
 	}
 }
 
