@@ -1,0 +1,9 @@
+[logger]
+level = "INFO"
+
+[database]
+dsn = "postgres://calendar_user:secret@localhost:55432/calendar"
+
+[broker]
+adapter = "kafka"
+address = "localhost:9093"
