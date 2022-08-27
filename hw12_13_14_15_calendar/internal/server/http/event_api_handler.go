@@ -118,6 +118,25 @@ func processEvent(ctx context.Context, isNew bool, app Application, w http.Respo
 		return
 	}
 
+	var notifyAfter storage.NotifyAfter
+	if request.NotifyAfter != "" {
+		notifyAfterTime, err := time.Parse(time.RFC3339, request.NotifyAfter)
+		if err != nil {
+			w.WriteHeader(http.StatusUnprocessableEntity)
+			json.NewEncoder(w).Encode(
+				ErrorResponse{
+					Message: err.Error(),
+					Code:    http.StatusUnprocessableEntity,
+					Data:    []interface{}{"notifyAfter"},
+				},
+			)
+			return
+		}
+
+		notifyAfter.Time = notifyAfterTime
+		notifyAfter.IsSet = true
+	}
+
 	if isNew {
 		err = app.CreateEvent(
 			ctx,
@@ -125,6 +144,7 @@ func processEvent(ctx context.Context, isNew bool, app Application, w http.Respo
 			request.Title,
 			startsAt,
 			endsAt,
+			notifyAfter,
 		)
 	} else {
 		err = app.UpdateEvent(
@@ -133,6 +153,7 @@ func processEvent(ctx context.Context, isNew bool, app Application, w http.Respo
 			request.Title,
 			startsAt,
 			endsAt,
+			notifyAfter,
 		)
 	}
 
@@ -195,8 +216,20 @@ func getEvents(ctx context.Context, app Application, w http.ResponseWriter, r *h
 		)
 		return
 	}
+
+	response := make([]EventResponse, 0, len(events))
+	for _, ev := range events {
+		response = append(response, EventResponse{
+			ID:          ev.ID.String(),
+			Title:       ev.Title,
+			StartsAt:    ev.StartsAt,
+			EndsAt:      ev.EndsAt,
+			NotifyAfter: ev.NotifyAfter.Time,
+		})
+	}
+
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(events)
+	json.NewEncoder(w).Encode(response)
 }
 
 func deleteEvent(ctx context.Context, app Application, w http.ResponseWriter, r *http.Request) {

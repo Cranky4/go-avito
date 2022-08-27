@@ -3,37 +3,13 @@ package main
 import (
 	"log"
 
+	internalscheduler "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/scheduler"
 	"github.com/spf13/viper"
 )
 
-type Config struct {
-	Logger   LoggerConf
-	Database DatabaseConf
-	Broker   BrokerConf
-}
-
-type LoggerConf struct {
-	Level string
-}
-
-type DatabaseConf struct {
-	Dsn string
-}
-
-type BrokerAdapter string
-
-const (
-	KafkaAdapter BrokerAdapter = "kafka"
-)
-
-type BrokerConf struct {
-	Adapter BrokerAdapter
-	Address string
-}
-
-func NewConfig(path string) Config {
+func NewConfig(path string) internalscheduler.Config {
 	viper.SetConfigFile(path)
-	var c Config
+	var c internalscheduler.Config
 
 	if err := viper.ReadInConfig(); err != nil {
 		log.Fatalf("failed to read config: %v", err)

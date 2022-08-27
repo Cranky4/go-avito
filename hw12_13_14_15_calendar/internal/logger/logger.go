@@ -39,7 +39,7 @@ type Logger struct {
 }
 
 func New(level string) *Logger {
-	logg := log.New(os.Stdout, "", 0)
+	logg := log.New(os.Stdout, "", log.LstdFlags)
 	return &Logger{
 		level:       NewLogLevel(level),
 		debugPrefix: "[DEBUG]",

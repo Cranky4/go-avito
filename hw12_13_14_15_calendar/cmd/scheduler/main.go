@@ -6,7 +6,6 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/logger"
 	schedulerinternal "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/scheduler"
@@ -29,13 +28,12 @@ func main() {
 	config := NewConfig(configFile)
 	logg := logger.New(config.Logger.Level)
 
-	// broker
-	var producer schedulerinternal.Producer
+	var adapter schedulerinternal.Adapter
 	var err error
 
 	switch config.Broker.Adapter {
-	case KafkaAdapter:
-		producer, err = brokeradapters.NewKafkaAdapter(config.Broker.Address, logg)
+	case schedulerinternal.KafkaAdapter:
+		adapter, err = brokeradapters.NewKafkaAdapter(config.Broker.Address, logg)
 		if err != nil {
 			logg.Error("failed to start broker adapter: " + err.Error())
 			cancel()
@@ -47,7 +45,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	scheduler, err := schedulerinternal.NewScheduler(ctx, config.Database.Dsn, &producer, logg)
+	scheduler, err := schedulerinternal.NewScheduler(ctx, config, &adapter, logg)
 	if err != nil {
 		logg.Error("unknown broker adapter")
 		cancel()
@@ -63,10 +61,7 @@ func main() {
 	go func() {
 		<-ctx.Done()
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
-		defer cancel()
-
-		scheduler.Stop(ctx)
+		scheduler.Stop()
 	}()
 
 	logg.Info("scheduler is running...")

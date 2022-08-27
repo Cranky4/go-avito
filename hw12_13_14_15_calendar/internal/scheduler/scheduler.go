@@ -3,52 +3,85 @@ package internalscheduler
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"encoding/json"
 
 	// init pgsql.
 	_ "github.com/jackc/pgx/stdlib"
 )
 
 type Scheduler struct {
-	dsn      string
-	db       *sql.DB
-	producer *Producer
-	logger   *Logger
+	conf    Config
+	ctx     context.Context
+	db      *sql.DB
+	adapter *Adapter
+	logger  *Logger
 }
 
-func NewScheduler(ctx context.Context, dsn string, producer *Producer, logger Logger) (*Scheduler, error) {
+func NewScheduler(ctx context.Context, config Config, adapter *Adapter, logger Logger) (*Scheduler, error) {
 	s := &Scheduler{
-		producer: producer,
-		logger:   &logger,
+		ctx:     ctx,
+		adapter: adapter,
+		logger:  &logger,
+		conf:    config,
 	}
 
 	return s, nil
 }
 
-func (s *Scheduler) Start() error {
-	// connect to db
-	db, err := sql.Open("pgx", s.dsn)
+func (s *Scheduler) ensureDBConnected() error {
+	db, err := sql.Open("pgx", s.conf.Database.Dsn)
 	if err != nil {
 		return err
 	}
 	s.db = db
 
-	// connect to message broker
-	msg := Message{
-		Topic: "test",
-		Text:  "Hello",
-	}
-	err = (*s.producer).Send(msg)
-	(*s.logger).Info(fmt.Sprintf("%#v %#v", msg, err))
-	if err != nil {
+	return nil
+}
+
+func (s *Scheduler) Start() error {
+	if err := (*s.adapter).Init(); err != nil {
 		return err
+	}
+	if err := s.ensureDBConnected(); err != nil {
+		return err
+	}
+
+	notifications := make(chan Notification)
+	go func(ctx context.Context, db *sql.DB, ch chan Notification, logg Logger) {
+		startDBWorker(ctx, db, ch, logg, s.conf.DBWorker)
+
+		<-ctx.Done()
+	}(s.ctx, s.db, notifications, *s.logger)
+
+O:
+	for {
+		select {
+		case <-s.ctx.Done():
+			break O
+		case notification := <-notifications:
+			n, err := json.Marshal(notification)
+			if err != nil {
+				(*s.logger).Error(err.Error())
+			} else {
+				(*s.adapter).Send(Message{
+					Topic: "notifications",
+					Text:  string(n),
+				})
+			}
+		}
 	}
 
 	return nil
 }
 
-func (s *Scheduler) Stop(ctx context.Context) error {
+func (s *Scheduler) Stop() error {
 	(*s.db).Close()
 
 	return nil
+}
+
+func startDBWorker(ctx context.Context, db *sql.DB, ch chan Notification, logg Logger, conf DBWorkerConf) {
+	worker := NewDBWorker(db, conf, logg)
+
+	worker.Run(ctx, ch)
 }

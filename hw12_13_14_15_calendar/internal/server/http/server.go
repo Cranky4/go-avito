@@ -22,8 +22,20 @@ type Logger interface {
 }
 
 type Application interface {
-	CreateEvent(ctx context.Context, id storage.EventID, title string, startsAt, endsAt time.Time) error
-	UpdateEvent(ctx context.Context, id storage.EventID, title string, startsAt, endsAt time.Time) error
+	CreateEvent(
+		ctx context.Context,
+		id storage.EventID,
+		title string,
+		startsAt, endsAt time.Time,
+		notifyAfter storage.NotifyAfter,
+	) error
+	UpdateEvent(
+		ctx context.Context,
+		id storage.EventID,
+		title string,
+		startsAt, endsAt time.Time,
+		notifyAfter storage.NotifyAfter,
+	) error
 	GetEvent(ctx context.Context, id storage.EventID) (storage.Event, error)
 	DeleteEvent(ctx context.Context, id storage.EventID) error
 	GetDayEvents(ctx context.Context, date time.Time) ([]storage.Event, error)

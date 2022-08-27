@@ -31,12 +31,19 @@ func (h *handler) CreateEvent(ctx context.Context, r *(pb.CreateEventRequest)) (
 		return nil, err
 	}
 
+	var notifyAfter storage.NotifyAfter
+	if r.NotifyAfter != nil {
+		notifyAfter.Time = r.NotifyAfter.AsTime()
+		notifyAfter.IsSet = true
+	}
+
 	err = h.app.CreateEvent(
 		ctx,
 		eventID,
 		r.Title,
 		r.StartsAt.AsTime(),
 		r.EndsAt.AsTime(),
+		notifyAfter,
 	)
 
 	return &emptypb.Empty{}, err
@@ -50,12 +57,19 @@ func (h *handler) UpdateEvent(ctx context.Context, r *(pb.UpdateEventRequest)) (
 		return nil, err
 	}
 
+	var notifyAfter storage.NotifyAfter
+	if r.NotifyAfter != nil {
+		notifyAfter.Time = r.NotifyAfter.AsTime()
+		notifyAfter.IsSet = true
+	}
+
 	err = h.app.UpdateEvent(
 		ctx,
 		eventID,
 		r.Title,
 		r.StartsAt.AsTime(),
 		r.EndsAt.AsTime(),
+		notifyAfter,
 	)
 
 	return &emptypb.Empty{}, err
@@ -78,53 +92,35 @@ func (h *handler) GetDayEvents(ctx context.Context, r *timestamppb.Timestamp) (*
 	h.logg.Printf("%v", r)
 
 	evs, err := h.app.GetDayEvents(ctx, r.AsTime())
-	events := make([]*pb.Event, 0, len(evs))
 
-	for _, e := range evs {
-		events = append(events, &pb.Event{
-			Id:    e.ID.String(),
-			Title: e.Title,
-			StartsAt: &timestamppb.Timestamp{
-				Seconds: e.StartsAt.Unix(),
-			},
-			EndsAt: &timestamppb.Timestamp{
-				Seconds: e.EndsAt.Unix(),
-			},
-		})
-	}
-
-	return &pb.EventsResponse{Events: events}, err
+	return &pb.EventsResponse{Events: collectEvents(evs)}, err
 }
 
 func (h *handler) GetWeekEvents(ctx context.Context, r *timestamppb.Timestamp) (*pb.EventsResponse, error) {
 	h.logg.Printf("%v", r)
 
 	evs, err := h.app.GetWeekEvents(ctx, r.AsTime())
-	events := make([]*pb.Event, 0, len(evs))
 
-	for _, e := range evs {
-		events = append(events, &pb.Event{
-			Id:    e.ID.String(),
-			Title: e.Title,
-			StartsAt: &timestamppb.Timestamp{
-				Seconds: e.StartsAt.Unix(),
-			},
-			EndsAt: &timestamppb.Timestamp{
-				Seconds: e.EndsAt.Unix(),
-			},
-		})
-	}
-
-	return &pb.EventsResponse{Events: events}, err
+	return &pb.EventsResponse{Events: collectEvents(evs)}, err
 }
 
 func (h *handler) GetMonthEvents(ctx context.Context, r *timestamppb.Timestamp) (*pb.EventsResponse, error) {
 	h.logg.Printf("%v", r)
 
 	evs, err := h.app.GetMonthEvents(ctx, r.AsTime())
+
+	return &pb.EventsResponse{Events: collectEvents(evs)}, err
+}
+
+func collectEvents(evs []storage.Event) []*pb.Event {
 	events := make([]*pb.Event, 0, len(evs))
 
 	for _, e := range evs {
+		var notifyAfter timestamppb.Timestamp
+		if e.NotifyAfter.IsSet {
+			notifyAfter.Seconds = e.NotifyAfter.Time.Unix()
+		}
+
 		events = append(events, &pb.Event{
 			Id:    e.ID.String(),
 			Title: e.Title,
@@ -134,8 +130,9 @@ func (h *handler) GetMonthEvents(ctx context.Context, r *timestamppb.Timestamp) 
 			EndsAt: &timestamppb.Timestamp{
 				Seconds: e.EndsAt.Unix(),
 			},
+			NotifyAfter: &notifyAfter,
 		})
 	}
 
-	return &pb.EventsResponse{Events: events}, err
+	return events
 }
