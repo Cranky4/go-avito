@@ -1,5 +1,5 @@
 [logger]
-level = "INFO"
+level = "DEBUG"
 
 [database]
 dsn = "postgres://calendar_user:secret@localhost:55432/calendar"
@@ -7,3 +7,7 @@ dsn = "postgres://calendar_user:secret@localhost:55432/calendar"
 [broker]
 adapter = "kafka"
 address = "localhost:9093"
+
+[dbWorker]
+scanPeriod = "12m"
+clearPeriodDays = 365
