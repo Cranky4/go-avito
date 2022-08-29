@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 
+	iternalbroker "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/broker"
 	// init pgsql.
 	_ "github.com/jackc/pgx/stdlib"
 )
@@ -39,7 +40,7 @@ func (s *Scheduler) ensureDBConnected() error {
 }
 
 func (s *Scheduler) Start() error {
-	if err := (*s.adapter).Init(); err != nil {
+	if err := (*s.adapter).InitProducer(); err != nil {
 		return err
 	}
 	if err := s.ensureDBConnected(); err != nil {
@@ -63,7 +64,7 @@ O:
 			if err != nil {
 				(*s.logger).Error(err.Error())
 			} else {
-				(*s.adapter).Send(Message{
+				(*s.adapter).Produce(iternalbroker.Message{
 					Topic: "notifications",
 					Text:  string(n),
 				})

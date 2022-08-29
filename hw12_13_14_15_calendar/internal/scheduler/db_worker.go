@@ -68,46 +68,54 @@ L:
 		case <-ctx.Done():
 			break L
 		case <-time.After(scanPeriod):
-			w.Logg.Debug("start scanning new notifications...")
-
-			rows, err := selectStmt.QueryContext(ctx, time.Now())
+			err := w.scheduleEvent(ctx, selectStmt, updateStmt, ch)
 			if err != nil {
 				w.Logg.Error(err.Error())
 				break L
 			}
-			if rows.Err() != nil {
-				w.Logg.Error(err.Error())
-				break L
-			}
+		}
+	}
+}
 
-			var id, title string
-			var startsAt time.Time
+func (w *DBWorker) scheduleEvent(ctx context.Context, selectStmt, updateStmt *sql.Stmt, ch chan Notification) error {
+	w.Logg.Debug("start scanning new notifications...")
 
-			for rows.Next() {
-				err = rows.Scan(&id, &title, &startsAt)
+	rows, err := selectStmt.QueryContext(ctx, time.Now())
+	if err != nil {
+		return err
+	}
+	if rows.Err() != nil {
+		return rows.Err()
+	}
+
+	var id, title string
+	var startsAt time.Time
+
+	for rows.Next() {
+		err = rows.Scan(&id, &title, &startsAt)
+		if err != nil {
+			w.Logg.Error(err.Error())
+		}
+		defer rows.Close()
+
+		if id != "" {
+			w.Logg.Info(fmt.Sprintf("Event '%s' will starts at '%s'", title, startsAt.Format(time.RFC822)))
+
+			select {
+			case <-ctx.Done():
+				return nil
+			case ch <- Notification{ID: id, Title: title, StartedAt: startsAt}:
+				_, err := updateStmt.ExecContext(ctx, id)
 				if err != nil {
-					w.Logg.Error(err.Error())
+					return err
 				}
-				defer rows.Close()
 
-				if id != "" {
-					w.Logg.Info(fmt.Sprintf("Event '%s' will starts at '%s'", title, startsAt.Format(time.RFC822)))
-
-					select {
-					case <-ctx.Done():
-						break L
-					case ch <- Notification{ID: id, Title: title, StartedAt: startsAt}:
-						_, err := updateStmt.ExecContext(ctx, id)
-						if err != nil {
-							w.Logg.Error(err.Error())
-						}
-
-						w.Logg.Debug(fmt.Sprintf("event updated %s", id))
-					}
-				}
+				w.Logg.Debug(fmt.Sprintf("event updated %s", id))
 			}
 		}
 	}
+
+	return nil
 }
 
 func (w *DBWorker) runCleaner(ctx context.Context) {

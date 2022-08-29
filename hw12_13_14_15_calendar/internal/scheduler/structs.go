@@ -1,10 +1,10 @@
 package internalscheduler
 
-import "time"
+import (
+	"time"
 
-type Message struct {
-	Text, Topic string
-}
+	iternalbroker "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/broker"
+)
 
 type Notification struct {
 	ID, Title string
@@ -13,14 +13,14 @@ type Notification struct {
 }
 
 type Adapter interface {
-	Init() error
-	Send(message Message) error
+	InitProducer() error
+	Produce(message iternalbroker.Message) error
 }
 
 type Config struct {
 	Logger   LoggerConf
 	Database DatabaseConf
-	Broker   BrokerConf
+	Broker   iternalbroker.BrokerConf
 	DBWorker DBWorkerConf
 }
 
@@ -35,15 +35,4 @@ type DatabaseConf struct {
 type DBWorkerConf struct {
 	ScanPeriod      string
 	ClearPeriodDays int
-}
-
-type BrokerAdapter string
-
-const (
-	KafkaAdapter BrokerAdapter = "kafka"
-)
-
-type BrokerConf struct {
-	Adapter BrokerAdapter
-	Address string
 }

@@ -9,5 +9,5 @@ adapter = "kafka"
 address = "localhost:9093"
 
 [dbWorker]
-scanPeriod = "12m"
+scanPeriod = "1m"
 clearPeriodDays = 365

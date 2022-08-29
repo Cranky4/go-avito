@@ -9,7 +9,7 @@ import (
 
 	internalbroker "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/broker"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/logger"
-	schedulerinternal "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/scheduler"
+	internalsender "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/sender"
 )
 
 var configFile string
@@ -25,10 +25,11 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
 	config := NewConfig(configFile)
-	logg := logger.New(config.Logger.Level)
 
-	var adapter schedulerinternal.Adapter
+	var adapter internalsender.Adapter
 	var err error
+
+	logg := logger.New(config.Logger.Level)
 
 	switch config.Broker.Adapter {
 	case internalbroker.KafkaBrokerAdapter:
@@ -44,15 +45,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	scheduler, err := schedulerinternal.NewScheduler(ctx, config, &adapter, logg)
-	if err != nil {
-		logg.Error("unknown broker adapter")
-		cancel()
-		os.Exit(1)
-	}
+	sender := internalsender.NewSender(ctx, config, &adapter, logg)
 
-	if err := scheduler.Start(); err != nil {
-		logg.Error("cannot start scheduler " + err.Error())
+	if err := sender.Start(); err != nil {
+		logg.Error("failed to start sender: " + err.Error())
 		cancel()
 		os.Exit(1)
 	}
@@ -60,10 +56,14 @@ func main() {
 	go func() {
 		<-ctx.Done()
 
-		scheduler.Stop()
+		if err := sender.Stop(); err != nil {
+			logg.Error("failed to stop sender: " + err.Error())
+			cancel()
+			os.Exit(1)
+		}
 	}()
 
-	logg.Info("scheduler is running...")
+	logg.Info("sender is running...")
 
 	<-ctx.Done()
 	cancel()
