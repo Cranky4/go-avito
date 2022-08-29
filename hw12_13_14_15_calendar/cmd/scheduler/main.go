@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -25,7 +26,7 @@ func main() {
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 
 	config := NewConfig(configFile)
-	logg := logger.New(config.Logger.Level)
+	logg := logger.New(config.Logger.Level, log.LstdFlags)
 
 	var adapter schedulerinternal.Adapter
 	var err error

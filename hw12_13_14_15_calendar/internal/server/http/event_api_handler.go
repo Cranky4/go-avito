@@ -219,12 +219,17 @@ func getEvents(ctx context.Context, app Application, w http.ResponseWriter, r *h
 
 	response := make([]EventResponse, 0, len(events))
 	for _, ev := range events {
+		var notify *time.Time = nil
+		if ev.NotifyAfter.IsSet {
+			notify = &ev.NotifyAfter.Time
+		}
+
 		response = append(response, EventResponse{
 			ID:          ev.ID.String(),
 			Title:       ev.Title,
 			StartsAt:    ev.StartsAt,
 			EndsAt:      ev.EndsAt,
-			NotifyAfter: ev.NotifyAfter.Time,
+			NotifyAfter: notify,
 		})
 	}
 

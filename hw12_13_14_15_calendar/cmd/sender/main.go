@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -29,7 +30,7 @@ func main() {
 	var adapter internalsender.Adapter
 	var err error
 
-	logg := logger.New(config.Logger.Level)
+	logg := logger.New(config.Logger.Level, log.LstdFlags)
 
 	switch config.Broker.Adapter {
 	case internalbroker.KafkaBrokerAdapter:
