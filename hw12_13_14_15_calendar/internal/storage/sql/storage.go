@@ -42,6 +42,10 @@ func (s *Storage) Connect(ctx context.Context) error {
 	}
 	s.db = db
 
+	if err := s.db.Ping(); err != nil {
+		return err
+	}
+
 	return nil
 }
 
