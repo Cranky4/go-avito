@@ -11,6 +11,7 @@ const (
 )
 
 type BrokerConf struct {
-	Adapter                 BrokerAdapter
-	Address, Topic, Version string
+	Adapter                                     BrokerAdapter
+	Address, Topic, Version, ConnectionTryDelay string
+	MaxConnectionTries                          int
 }

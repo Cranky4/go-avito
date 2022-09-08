@@ -4,6 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
+	"net"
+	"time"
 
 	iternalbroker "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/broker"
 	// init pgsql.
@@ -36,14 +39,22 @@ func (s *Scheduler) ensureDBConnected() error {
 	}
 	s.db = db
 
+	err = s.db.Ping()
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (s *Scheduler) Start() error {
-	if err := (*s.adapter).InitProducer(); err != nil {
+	err := s.connectToDatabase()
+	if err != nil {
 		return err
 	}
-	if err := s.ensureDBConnected(); err != nil {
+
+	err = s.connectToBroker()
+	if err != nil {
 		return err
 	}
 
@@ -73,6 +84,62 @@ O:
 	}
 
 	return nil
+}
+
+func (s *Scheduler) connectToBroker() error {
+	for t := 0; t < s.conf.Broker.MaxConnectionTries; t++ {
+		err := (*s.adapter).InitProducer()
+
+		if err == nil {
+			(*s.logger).Info("Connected to broker")
+
+			return nil
+		}
+
+		opError := new(net.OpError)
+		if errors.As(err, &opError) {
+			(*s.logger).Info("Waiting for broker connection...")
+			delay, err := time.ParseDuration(s.conf.Broker.ConnectionTryDelay)
+			if err != nil {
+				return err
+			}
+			time.Sleep(delay)
+
+			continue
+		} else {
+			return err
+		}
+	}
+
+	return errors.New("maximum tries reached")
+}
+
+func (s *Scheduler) connectToDatabase() error {
+	for t := 0; t < s.conf.Database.MaxConnectionTries; t++ {
+		err := s.ensureDBConnected()
+
+		if err == nil {
+			(*s.logger).Info("Connected to database")
+
+			return nil
+		}
+
+		opError := new(net.OpError)
+		if errors.As(err, &opError) {
+			(*s.logger).Info("Waiting for database connection...")
+			delay, err := time.ParseDuration(s.conf.Database.ConnectionTryDelay)
+			if err != nil {
+				return err
+			}
+			time.Sleep(delay)
+
+			continue
+		} else {
+			return err
+		}
+	}
+
+	return errors.New("maximum tries reached")
 }
 
 func (s *Scheduler) Stop() error {

@@ -29,7 +29,8 @@ type LoggerConf struct {
 }
 
 type DatabaseConf struct {
-	Dsn string
+	Dsn, ConnectionTryDelay string
+	MaxConnectionTries      int
 }
 
 type DBWorkerConf struct {

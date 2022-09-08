@@ -15,14 +15,8 @@ type Adapter interface {
 type Config struct {
 	Logger LoggerConf
 	Broker iternalbroker.BrokerConf
-
-	DBWorker DBWorkerConf
 }
 
 type LoggerConf struct {
 	Level string
-}
-
-type DBWorkerConf struct {
-	ScanPeriod string
 }
