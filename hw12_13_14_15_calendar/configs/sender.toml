@@ -6,6 +6,8 @@ adapter = "kafka"
 address = "localhost:9093"
 topic = "notifications"
 version = "3.2.0"
+maxConnectionTries = 5
+connectionTryDelay = "3s"
 
 [dbWorker]
 scanPeriod = "12m"
