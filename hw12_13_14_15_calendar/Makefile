@@ -98,4 +98,14 @@ up-dev:
 down-dev:
 	docker-compose -f deployments/docker-compose.dev.yaml down
 
+# Prod
+build:
+	docker-compose -f deployments/docker-compose.yaml build
+up:
+	docker-compose -f deployments/docker-compose.yaml up
+
+down:
+	docker-compose -f deployments/docker-compose.yaml down
+
 .PHONY: build run build-img run-img version test lint
+
