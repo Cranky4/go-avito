@@ -42,7 +42,12 @@ func main() {
 		storage = sqlstorage.New(ctx, config.Database.Dsn)
 		s, ok := storage.(*sqlstorage.Storage)
 		if ok {
-			s.Connect(ctx)
+			err := s.Connect(ctx)
+			if err != nil {
+				logg.Error("failed to connect to database: " + err.Error())
+				cancel()
+				return
+			}
 		}
 	} else {
 		storage = memorystorage.New()
