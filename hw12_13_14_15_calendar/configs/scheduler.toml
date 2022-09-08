@@ -3,10 +3,14 @@ level = "DEBUG"
 
 [database]
 dsn = "postgres://calendar_user:secret@localhost:55432/calendar"
+maxConnectionTries = 5
+connectionTryDelay = "3s"
 
 [broker]
 adapter = "kafka"
 address = "localhost:9093"
+maxConnectionTries = 5
+connectionTryDelay = "3s"
 
 [dbWorker]
 scanPeriod = "1m"

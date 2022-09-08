@@ -20,12 +20,6 @@ func NewKafkaAdapter(conf BrokerConf, logg Logger) (*KafkaAdapter, error) {
 }
 
 func (a *KafkaAdapter) InitProducer() error {
-	p, err := createProducer(a.config.Address)
-	if err != nil {
-		return err
-	}
-	a.producer = p
-
 	broker := sarama.NewBroker(a.config.Address)
 
 	if err := broker.Open(nil); err != nil {
@@ -54,6 +48,12 @@ func (a *KafkaAdapter) InitProducer() error {
 	if err := broker.Close(); err != nil {
 		return err
 	}
+
+	p, err := createProducer(a.config.Address)
+	if err != nil {
+		return err
+	}
+	a.producer = p
 
 	return nil
 }
