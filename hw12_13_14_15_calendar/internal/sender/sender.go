@@ -54,14 +54,14 @@ func (s *Sender) connectToBroker() error {
 		err := (*s.adapter).InitConsumer()
 
 		if err == nil {
-			s.logger.Info("Connected to broker")
+			s.logger.Info("[Sender] Connected to broker")
 
 			return nil
 		}
 
 		opError := new(net.OpError)
 		if errors.As(err, &opError) {
-			s.logger.Info("Waiting for database connection...")
+			s.logger.Info("[Sender] Waiting for database connection...")
 			delay, err := time.ParseDuration(s.config.Broker.ConnectionTryDelay)
 			if err != nil {
 				return err
@@ -74,7 +74,7 @@ func (s *Sender) connectToBroker() error {
 		}
 	}
 
-	return errors.New("maximum tries reached")
+	return errors.New("[Sender] Maximum tries reached")
 }
 
 func (s *Sender) Stop() error {
