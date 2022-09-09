@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	sqlstorage "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/storage/sql"
 	"github.com/spf13/viper"
 )
 
@@ -12,17 +13,13 @@ import (
 type Config struct {
 	Logger   LoggerConf
 	Storage  StorageConf
-	Database DatabaseConf
+	Database sqlstorage.DatabaseConf
 	HTTP     HTTPConf
 	GRPC     GrpcConf
 }
 
 type LoggerConf struct {
 	Level string
-}
-
-type DatabaseConf struct {
-	Dsn string
 }
 
 type HTTPConf struct {
