@@ -18,14 +18,14 @@ type Scheduler struct {
 	ctx     context.Context
 	db      *sql.DB
 	adapter *Adapter
-	logger  *Logger
+	logg    *Logger
 }
 
-func NewScheduler(ctx context.Context, config Config, adapter *Adapter, logger Logger) (*Scheduler, error) {
+func NewScheduler(ctx context.Context, config Config, adapter *Adapter, logg Logger) (*Scheduler, error) {
 	s := &Scheduler{
 		ctx:     ctx,
 		adapter: adapter,
-		logger:  &logger,
+		logg:    &logg,
 		conf:    config,
 	}
 
@@ -63,7 +63,7 @@ func (s *Scheduler) Start() error {
 		startDBWorker(ctx, db, ch, logg, s.conf.DBWorker)
 
 		<-ctx.Done()
-	}(s.ctx, s.db, notifications, *s.logger)
+	}(s.ctx, s.db, notifications, *s.logg)
 
 O:
 	for {
@@ -73,7 +73,7 @@ O:
 		case notification := <-notifications:
 			n, err := json.Marshal(notification)
 			if err != nil {
-				(*s.logger).Error(err.Error())
+				(*s.logg).Error(err.Error())
 			} else {
 				(*s.adapter).Produce(iternalbroker.Message{
 					Topic: "notifications",
@@ -91,14 +91,14 @@ func (s *Scheduler) connectToBroker() error {
 		err := (*s.adapter).InitProducer()
 
 		if err == nil {
-			(*s.logger).Info("Connected to broker")
+			(*s.logg).Info("[Scheduler] Connected to broker")
 
 			return nil
 		}
 
 		opError := new(net.OpError)
 		if errors.As(err, &opError) {
-			(*s.logger).Info("Waiting for broker connection...")
+			(*s.logg).Info("[Scheduler] Waiting for broker connection...")
 			delay, err := time.ParseDuration(s.conf.Broker.ConnectionTryDelay)
 			if err != nil {
 				return err
@@ -111,7 +111,7 @@ func (s *Scheduler) connectToBroker() error {
 		}
 	}
 
-	return errors.New("maximum tries reached")
+	return errors.New("[Scheduler] Maximum tries reached")
 }
 
 func (s *Scheduler) connectToDatabase() error {
@@ -119,14 +119,14 @@ func (s *Scheduler) connectToDatabase() error {
 		err := s.ensureDBConnected()
 
 		if err == nil {
-			(*s.logger).Info("Connected to database")
+			(*s.logg).Info("[Scheduler] Connected to database")
 
 			return nil
 		}
 
 		opError := new(net.OpError)
 		if errors.As(err, &opError) {
-			(*s.logger).Info("Waiting for database connection...")
+			(*s.logg).Info("[Scheduler] Waiting for database connection...")
 			delay, err := time.ParseDuration(s.conf.Database.ConnectionTryDelay)
 			if err != nil {
 				return err
@@ -139,7 +139,7 @@ func (s *Scheduler) connectToDatabase() error {
 		}
 	}
 
-	return errors.New("maximum tries reached")
+	return errors.New("[Scheduler] Maximum tries reached")
 }
 
 func (s *Scheduler) Stop() error {
