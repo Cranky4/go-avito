@@ -4,11 +4,14 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/logger"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/storage"
+
 	// init pgsql.
 	_ "github.com/jackc/pgx/stdlib"
 )
@@ -16,13 +19,14 @@ import (
 var ErrNotConnected = errors.New("not connected to database")
 
 type Storage struct {
-	dsn     string
+	config  DatabaseConf
 	db      *sql.DB
 	context context.Context
+	logg    *logger.Logger
 }
 
-func New(ctx context.Context, dsn string) *Storage {
-	return &Storage{dsn: dsn, context: ctx}
+func New(ctx context.Context, config DatabaseConf, logg *logger.Logger) *Storage {
+	return &Storage{config: config, context: ctx, logg: logg}
 }
 
 func (s *Storage) ensureConnected() error {
@@ -36,17 +40,37 @@ func (s *Storage) ensureConnected() error {
 }
 
 func (s *Storage) Connect(ctx context.Context) error {
-	db, err := sql.Open("pgx", s.dsn)
+	db, err := sql.Open("pgx", s.config.Dsn)
 	if err != nil {
 		return err
 	}
 	s.db = db
 
-	if err := s.db.Ping(); err != nil {
-		return err
+	for t := 0; t < s.config.MaxConnectionTries; t++ {
+		err := s.db.Ping()
+
+		if err == nil {
+			s.logg.Info("[SQL Storage] connected to database")
+
+			return nil
+		}
+
+		opError := new(net.OpError)
+		if errors.As(err, &opError) {
+			s.logg.Info("[SQL Storage] Waiting for database connection...")
+			delay, err := time.ParseDuration(s.config.ConnectionTryDelay)
+			if err != nil {
+				return err
+			}
+			time.Sleep(delay)
+
+			continue
+		} else {
+			return err
+		}
 	}
 
-	return nil
+	return errors.New("[SQL Storage] maximum tries reached")
 }
 
 func (s *Storage) Close(ctx context.Context) error {

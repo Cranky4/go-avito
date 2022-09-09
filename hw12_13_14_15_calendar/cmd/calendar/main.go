@@ -39,12 +39,12 @@ func main() {
 
 	var storage app.Storage
 	if config.Storage.Driver == SQLStorage {
-		storage = sqlstorage.New(ctx, config.Database.Dsn)
+		storage = sqlstorage.New(ctx, config.Database, logg)
 		s, ok := storage.(*sqlstorage.Storage)
 		if ok {
 			err := s.Connect(ctx)
 			if err != nil {
-				logg.Error("failed to connect to database: " + err.Error())
+				logg.Error(err.Error())
 				cancel()
 				return
 			}
