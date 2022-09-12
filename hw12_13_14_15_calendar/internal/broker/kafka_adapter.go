@@ -40,7 +40,7 @@ func (a *KafkaAdapter) InitProducer() error {
 	}
 
 	if !exists {
-		if err := createTopics(broker); err != nil {
+		if err := createTopics(broker, a.config.Topic); err != nil {
 			return err
 		}
 	}
@@ -83,7 +83,7 @@ func (a *KafkaAdapter) InitConsumer() error {
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-	consumer, err := sarama.NewConsumerGroup([]string{a.config.Address}, "notifications", config)
+	consumer, err := sarama.NewConsumerGroup([]string{a.config.Address}, a.config.Topic, config)
 	if err != nil {
 		return err
 	}
@@ -93,18 +93,15 @@ func (a *KafkaAdapter) InitConsumer() error {
 }
 
 type ConsumerHandler struct {
-	ready  chan bool
 	out    chan Message
 	logger Logger
 }
 
 func (c *ConsumerHandler) Setup(s sarama.ConsumerGroupSession) error {
-	c.logger.Info(fmt.Sprintf("handler setup %#v", s))
 	return nil
 }
 
 func (c *ConsumerHandler) Cleanup(s sarama.ConsumerGroupSession) error {
-	c.logger.Info(fmt.Sprintf("handler cleanup %#v", s))
 	return nil
 }
 
@@ -164,7 +161,6 @@ func (a *KafkaAdapter) Consume(ctx context.Context, topic string) (<-chan Messag
 		}
 
 		close(consumerHandler.out)
-		close(consumerHandler.ready)
 		a.logg.Info("Consumer stopped")
 	}(ctx, topic)
 
@@ -198,9 +194,9 @@ func createProducer(broker string) (*sarama.SyncProducer, error) {
 	return &producer, nil
 }
 
-func createTopics(broker *sarama.Broker) error {
+func createTopics(broker *sarama.Broker, topicName string) error {
 	topics := make(map[string]*sarama.TopicDetail)
-	topics["notifications"] = &sarama.TopicDetail{
+	topics[topicName] = &sarama.TopicDetail{
 		NumPartitions:     1,
 		ReplicationFactor: 1,
 	}
