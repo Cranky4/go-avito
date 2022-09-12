@@ -102,10 +102,18 @@ down-dev:
 build:
 	docker-compose -f deployments/docker-compose.yaml build
 up:
-	docker-compose -f deployments/docker-compose.yaml up
-
+	DATABASE_NAME="calendar" \
+	DATABASE_USER="calendar_user" \
+	DATABASE_PASSWORD="secret" \
+	DATABASE_PORT="55432" \
+	ZOOKEEPER_PORT="2181" \
+	KAFKA_PORT="9093" \
+	KAFKA_UI_PORT="22181" \
+	docker-compose -f deployments/docker-compose.yaml up -d --build
+log:
+	docker-compose -f deployments/docker-compose.yaml logs calendar scheduler sender -f
 down:
-	docker-compose -f deployments/docker-compose.yaml down
+	docker-compose -f deployments/docker-compose.yaml down --remove-orphans
 
 .PHONY: build run build-img run-img version test lint
 

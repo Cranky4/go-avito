@@ -76,7 +76,7 @@ O:
 				(*s.logg).Error(err.Error())
 			} else {
 				(*s.adapter).Produce(iternalbroker.Message{
-					Topic: "notifications",
+					Topic: s.conf.Broker.Topic,
 					Text:  string(n),
 				})
 			}

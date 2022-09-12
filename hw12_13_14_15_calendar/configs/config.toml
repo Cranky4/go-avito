@@ -6,6 +6,8 @@ driver = "sql" # memory, sql
 
 [database] # используется только при driver=sql
 dsn = "postgres://calendar_user:secret@localhost:55432/calendar"
+maxConnectionTries = 5
+connectionTryDelay = "3s"
 
 [http]
 addr = ":8080"

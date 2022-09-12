@@ -3,7 +3,6 @@ package iternalbroker
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Shopify/sarama"
 )
@@ -40,7 +39,7 @@ func (a *KafkaAdapter) InitProducer() error {
 	}
 
 	if !exists {
-		if err := createTopics(broker); err != nil {
+		if err := createTopics(broker, []string{a.config.Topic}); err != nil {
 			return err
 		}
 	}
@@ -49,7 +48,7 @@ func (a *KafkaAdapter) InitProducer() error {
 		return err
 	}
 
-	p, err := createProducer(a.config.Address)
+	p, err := createProducer(a.config)
 	if err != nil {
 		return err
 	}
@@ -73,17 +72,17 @@ func (a *KafkaAdapter) Produce(message Message) error {
 }
 
 func (a *KafkaAdapter) InitConsumer() error {
-	config := sarama.NewConfig()
-
 	ver, err := sarama.ParseKafkaVersion(a.config.Version)
 	if err != nil {
 		return err
 	}
+
+	config := sarama.NewConfig()
 	config.Version = ver
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
 
-	consumer, err := sarama.NewConsumerGroup([]string{a.config.Address}, "notifications", config)
+	consumer, err := sarama.NewConsumerGroup([]string{a.config.Address}, a.config.Topic, config)
 	if err != nil {
 		return err
 	}
@@ -93,13 +92,11 @@ func (a *KafkaAdapter) InitConsumer() error {
 }
 
 type ConsumerHandler struct {
-	ready  chan bool
 	out    chan Message
 	logger Logger
 }
 
 func (c *ConsumerHandler) Setup(s sarama.ConsumerGroupSession) error {
-	c.logger.Info(fmt.Sprintf("handler setup %#v", s))
 	return nil
 }
 
@@ -155,16 +152,17 @@ func (a *KafkaAdapter) Consume(ctx context.Context, topic string) (<-chan Messag
 				break L
 			default:
 				if err := (*a.consumerGroup).Consume(ctx, []string{topic}, &consumerHandler); err != nil {
-					log.Panicf("Error from consumer: %v", err)
+					a.logg.Error(err.Error())
+					break L
 				}
 				if ctx.Err() != nil {
+					a.logg.Error(ctx.Err().Error())
 					break L
 				}
 			}
 		}
 
 		close(consumerHandler.out)
-		close(consumerHandler.ready)
 		a.logg.Info("Consumer stopped")
 	}(ctx, topic)
 
@@ -182,15 +180,21 @@ func (a *KafkaAdapter) CloseConsumer() error {
 	return nil
 }
 
-func createProducer(broker string) (*sarama.SyncProducer, error) {
+func createProducer(conf BrokerConf) (*sarama.SyncProducer, error) {
+	ver, err := sarama.ParseKafkaVersion(conf.Version)
+	if err != nil {
+		return nil, err
+	}
+
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 10
 	config.Producer.Return.Successes = true
+	config.Version = ver
 
 	// TLS?
 
-	producer, err := sarama.NewSyncProducer([]string{broker}, config)
+	producer, err := sarama.NewSyncProducer([]string{conf.Address}, config)
 	if err != nil {
 		return nil, err
 	}
@@ -198,11 +202,13 @@ func createProducer(broker string) (*sarama.SyncProducer, error) {
 	return &producer, nil
 }
 
-func createTopics(broker *sarama.Broker) error {
+func createTopics(broker *sarama.Broker, topicsToCreate []string) error {
 	topics := make(map[string]*sarama.TopicDetail)
-	topics["notifications"] = &sarama.TopicDetail{
-		NumPartitions:     1,
-		ReplicationFactor: 1,
+	for _, t := range topicsToCreate {
+		topics[t] = &sarama.TopicDetail{
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		}
 	}
 
 	_, err := broker.CreateTopics(&sarama.CreateTopicsRequest{TopicDetails: topics})

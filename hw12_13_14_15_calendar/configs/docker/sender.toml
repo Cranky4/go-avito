@@ -3,9 +3,9 @@ level = "DEBUG"
 
 [broker]
 adapter = "kafka"
-address = "kafka:9093"
+# https://github.com/Shopify/sarama/issues/1683
+address = "10.5.0.7:9092"
 topic = "notifications"
 version = "3.2.0"
-
-[dbWorker]
-scanPeriod = "12m"
+maxConnectionTries = 5
+connectionTryDelay = "3s"

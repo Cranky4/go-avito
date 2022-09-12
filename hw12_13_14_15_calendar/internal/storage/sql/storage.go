@@ -11,9 +11,7 @@ import (
 
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/logger"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/storage"
-
-	// init pgsql.
-	_ "github.com/jackc/pgx/stdlib"
+	_ "github.com/jackc/pgx/stdlib" // init pgsql.
 )
 
 var ErrNotConnected = errors.New("not connected to database")

@@ -31,20 +31,27 @@ func (s *Sender) Start() error {
 		return err
 	}
 
-	s.logger.Info("sender started")
-
 	go func(notifications <-chan iternalbroker.Message) {
 	L:
 		for {
 			select {
 			case <-s.ctx.Done():
 				break L
-			case msg := <-notifications:
+			case msg, opened := <-notifications:
+				if !opened {
+					break L
+				}
+
+				time.Sleep(3 * time.Second)
 				// send here
 				fmt.Printf("[NOTIFICATION SENT] %s\n", msg.Text)
 			}
 		}
+
+		s.logger.Info("sender stopped")
 	}(notifications)
+
+	s.logger.Info("sender started")
 
 	return nil
 }
@@ -61,7 +68,7 @@ func (s *Sender) connectToBroker() error {
 
 		opError := new(net.OpError)
 		if errors.As(err, &opError) {
-			s.logger.Info("[Sender] Waiting for database connection...")
+			s.logger.Info("[Sender] Waiting for broker connection...")
 			delay, err := time.ParseDuration(s.config.Broker.ConnectionTryDelay)
 			if err != nil {
 				return err

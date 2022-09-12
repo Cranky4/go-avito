@@ -13,6 +13,9 @@ services:
       - "90:9999" #grpc
     depends_on:
       - postgres
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.2
 
   scheduler:
     build: 
@@ -24,7 +27,9 @@ services:
     depends_on:
       - kafka
       - postgres
-    restart: always
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.3
    
   sender:
     build: 
@@ -35,7 +40,9 @@ services:
       - '../logs/docker:/usr/src/app/logs'
     depends_on:
       - kafka
-    restart: always
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.4
 
   postgres:
     container_name: postgres
@@ -49,6 +56,9 @@ services:
       - '${DATABASE_PORT:-5432}:5432'
     volumes:
         - calendar_postgres:/var/lib/postgresql/data
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.5
   
   zookeeper:
     container_name: zookeeper
@@ -57,10 +67,13 @@ services:
       - '${ZOOKEEPER_PORT:-2181}:2181'
     environment:
       - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.6
 
   kafka:
     container_name: kafka
-    image: 'bitnami/kafka:latest'
+    image: 'bitnami/kafka:3.2'
     ports:
       - '${KAFKA_PORT:-9093}:9093'
       - '9092:9092'
@@ -68,7 +81,6 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:${ZOOKEEPER_PORT:-2181}
       ALLOW_PLAINTEXT_LISTENER: yes
-      KAFKA_CFG_LISTENERS: CLIENT://:9092,EXTERNAL://:9093
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_CFG_LISTENERS: CLIENT://:9092,EXTERNAL://:9093
       KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9092,EXTERNAL://localhost:9093
@@ -76,6 +88,9 @@ services:
     depends_on:
       - zookeeper
     restart: always
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.7
 
   kafka-ui:
     container_name: kafka_ui
@@ -87,7 +102,18 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
     depends_on:
       - kafka
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.8
 
 volumes:
   calendar_postgres:
     name: 'calendar-postgres'
+
+networks:
+  calendar_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/10
+          gateway: 10.5.0.1
