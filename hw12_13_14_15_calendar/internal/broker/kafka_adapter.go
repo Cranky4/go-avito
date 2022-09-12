@@ -39,7 +39,7 @@ func (a *KafkaAdapter) InitProducer() error {
 	}
 
 	if !exists {
-		if err := createTopics(broker, []string{a.config.Topic}); err != nil {
+		if err := createTopics(broker, a.config.Topic); err != nil {
 			return err
 		}
 	}
@@ -101,7 +101,6 @@ func (c *ConsumerHandler) Setup(s sarama.ConsumerGroupSession) error {
 }
 
 func (c *ConsumerHandler) Cleanup(s sarama.ConsumerGroupSession) error {
-	c.logger.Info(fmt.Sprintf("handler cleanup %#v", s))
 	return nil
 }
 
@@ -202,13 +201,11 @@ func createProducer(conf BrokerConf) (*sarama.SyncProducer, error) {
 	return &producer, nil
 }
 
-func createTopics(broker *sarama.Broker, topicsToCreate []string) error {
+func createTopics(broker *sarama.Broker, topicName string) error {
 	topics := make(map[string]*sarama.TopicDetail)
-	for _, t := range topicsToCreate {
-		topics[t] = &sarama.TopicDetail{
-			NumPartitions:     1,
-			ReplicationFactor: 1,
-		}
+	topics[topicName] = &sarama.TopicDetail{
+		NumPartitions:     1,
+		ReplicationFactor: 1,
 	}
 
 	_, err := broker.CreateTopics(&sarama.CreateTopicsRequest{TopicDetails: topics})

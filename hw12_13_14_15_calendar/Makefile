@@ -109,7 +109,7 @@ up:
 	ZOOKEEPER_PORT="2181" \
 	KAFKA_PORT="9093" \
 	KAFKA_UI_PORT="22181" \
-	docker-compose -f deployments/docker-compose.yaml up -d --build
+	docker-compose -f deployments/docker-compose.yaml up -d
 log:
 	docker-compose -f deployments/docker-compose.yaml logs calendar scheduler sender -f
 down:

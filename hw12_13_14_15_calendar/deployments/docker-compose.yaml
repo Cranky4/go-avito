@@ -4,10 +4,7 @@ services:
   calendar:
     build: 
       context: ../
-      dockerfile: ./docker/Calendar.dockerfile
-    volumes:
-      - '../configs/docker/calendar.toml:/usr/src/app/config.toml:ro'
-      - '../logs/docker:/usr/src/app/logs'
+      dockerfile: ./build/Calendar.dockerfile
     expose:
       - "80:8888" #http
       - "90:9999" #grpc
@@ -20,10 +17,7 @@ services:
   scheduler:
     build: 
       context: ../
-      dockerfile: ./docker/Scheduler.dockerfile
-    volumes:
-      - '../configs/docker/scheduler.toml:/usr/src/app/config.toml:ro'
-      - '../logs/docker:/usr/src/app/logs'
+      dockerfile: ./build/Scheduler.dockerfile
     depends_on:
       - kafka
       - postgres
@@ -34,10 +28,7 @@ services:
   sender:
     build: 
       context: ../
-      dockerfile: ./docker/Sender.dockerfile
-    volumes:
-      - '../configs/docker/sender.toml:/usr/src/app/config.toml:ro'
-      - '../logs/docker:/usr/src/app/logs'
+      dockerfile: ./build/Sender.dockerfile
     depends_on:
       - kafka
     networks:

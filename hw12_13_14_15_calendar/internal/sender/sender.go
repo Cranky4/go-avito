@@ -12,13 +12,13 @@ import (
 
 type Sender struct {
 	ctx     context.Context
-	config  Config
+	conf    Config
 	adapter *Adapter
-	logger  Logger
+	logg    *Logger
 }
 
 func NewSender(ctx context.Context, config Config, adapter *Adapter, logger Logger) *Sender {
-	return &Sender{ctx: ctx, config: config, adapter: adapter, logger: logger}
+	return &Sender{ctx: ctx, conf: config, adapter: adapter, logg: &logger}
 }
 
 func (s *Sender) Start() error {
@@ -26,7 +26,7 @@ func (s *Sender) Start() error {
 		return err
 	}
 
-	notifications, err := (*s.adapter).Consume(s.ctx, s.config.Broker.Topic)
+	notifications, err := (*s.adapter).Consume(s.ctx, s.conf.Broker.Topic)
 	if err != nil {
 		return err
 	}
@@ -48,40 +48,50 @@ func (s *Sender) Start() error {
 			}
 		}
 
-		s.logger.Info("sender stopped")
+		(*s.logg).Info("sender stopped")
 	}(notifications)
 
-	s.logger.Info("sender started")
+	(*s.logg).Info("sender started")
 
 	return nil
 }
 
 func (s *Sender) connectToBroker() error {
-	for t := 0; t < s.config.Broker.MaxConnectionTries; t++ {
+	delay, err := time.ParseDuration(s.conf.Broker.ConnectionTryDelay)
+	if err != nil {
+		return err
+	}
+	pause := time.NewTicker(delay)
+	defer pause.Stop()
+
+	currentTry := 1
+
+	for {
+		currentTry++
 		err := (*s.adapter).InitConsumer()
 
 		if err == nil {
-			s.logger.Info("[Sender] Connected to broker")
+			(*s.logg).Info("[Sender] Connected to broker")
 
 			return nil
 		}
 
 		opError := new(net.OpError)
-		if errors.As(err, &opError) {
-			s.logger.Info("[Sender] Waiting for broker connection...")
-			delay, err := time.ParseDuration(s.config.Broker.ConnectionTryDelay)
-			if err != nil {
-				return err
-			}
-			time.Sleep(delay)
-
-			continue
-		} else {
+		if !errors.As(err, &opError) {
 			return err
 		}
-	}
 
-	return errors.New("[Sender] Maximum tries reached")
+		(*s.logg).Info("[Sender] Waiting for broker connection...")
+
+		select {
+		case <-s.ctx.Done():
+			return nil
+		case <-pause.C:
+			if currentTry > s.conf.Broker.MaxConnectionTries {
+				return errors.New("[Sender] Maximum tries reached")
+			}
+		}
+	}
 }
 
 func (s *Sender) Stop() error {
