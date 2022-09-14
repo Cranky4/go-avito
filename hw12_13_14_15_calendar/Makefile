@@ -111,7 +111,7 @@ up:
 	KAFKA_UI_PORT="22181" \
 	docker-compose -f deployments/docker-compose.yaml up -d
 log:
-	docker-compose -f deployments/docker-compose.yaml logs calendar scheduler sender -f
+	docker-compose -f deployments/docker-compose.yaml logs calendar scheduler sender migrator -f
 down:
 	docker-compose -f deployments/docker-compose.yaml down --remove-orphans
 

@@ -2,6 +2,7 @@ version: "3"
 
 services:
   calendar:
+    container_name: calendar
     build: 
       context: ../
       dockerfile: ./build/Calendar.dockerfile
@@ -9,23 +10,25 @@ services:
       - "80:8888" #http
       - "90:9999" #grpc
     depends_on:
-      - postgres
+      - migrator
     networks:
       calendar_network:
         ipv4_address:  10.5.0.2
 
   scheduler:
+    container_name: scheduler
     build: 
       context: ../
       dockerfile: ./build/Scheduler.dockerfile
     depends_on:
       - kafka
-      - postgres
+      - migrator
     networks:
       calendar_network:
         ipv4_address:  10.5.0.3
    
   sender:
+    container_name: sender
     build: 
       context: ../
       dockerfile: ./build/Sender.dockerfile
@@ -39,9 +42,9 @@ services:
     container_name: postgres
     image: 'postgres:14-alpine'
     environment: 
-      POSTGRES_DB: '${POSTGRES_DB:-calendar}'
-      POSTGRES_USER: '${POSTGRES_USER:-calendar_user}'
-      POSTGRES_PASSWORD: '${POSTGRES_PASSWORD:-secret}'
+      POSTGRES_DB: '${DATABASE_NAME:-calendar}'
+      POSTGRES_USER: '${DATABASE_USER:-calendar_user}'
+      POSTGRES_PASSWORD: '${DATABASE_PASSWORD:-secret}'
       PGDATA: '/var/lib/postgresql/data'
     ports: 
       - '${DATABASE_PORT:-5432}:5432'
@@ -96,10 +99,27 @@ services:
     networks:
       calendar_network:
         ipv4_address:  10.5.0.8
+  
+  migrator:
+    container_name: migrator
+    build:
+      context: ../
+      dockerfile: ./build/Migrator.dockerfile
+    depends_on:
+      - postgres
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.9
+    volumes:
+      - '../migrations:/go/migrations:ro'
+    environment:
+      CODE_DIR: '/go/migrations'
+      GOOSE_DRIVER: 'postgres'
+      GOOSE_DBSTRING: 'host=postgres user=${DATABASE_USER:-calendar_user} password=${DATABASE_PASSWORD:-secret} dbname=${DATABASE_NAME:-calendar} port=5432'
 
 volumes:
   calendar_postgres:
-    name: 'calendar-postgres'
+    name: 'calendar-postgres-prod'
 
 networks:
   calendar_network:
