@@ -137,7 +137,9 @@ func processEvent(ctx context.Context, isNew bool, app Application, w http.Respo
 		notifyAfter.IsSet = true
 	}
 
+	var statusCode int
 	if isNew {
+		statusCode = http.StatusCreated
 		err = app.CreateEvent(
 			ctx,
 			eventID,
@@ -147,6 +149,7 @@ func processEvent(ctx context.Context, isNew bool, app Application, w http.Respo
 			notifyAfter,
 		)
 	} else {
+		statusCode = http.StatusOK
 		err = app.UpdateEvent(
 			ctx,
 			eventID,
@@ -168,7 +171,7 @@ func processEvent(ctx context.Context, isNew bool, app Application, w http.Respo
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(statusCode)
 }
 
 func createEvent(ctx context.Context, app Application, w http.ResponseWriter, r *http.Request) {
@@ -274,7 +277,7 @@ func deleteEvent(ctx context.Context, app Application, w http.ResponseWriter, r 
 		)
 		return
 	}
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func updateEvent(ctx context.Context, app Application, w http.ResponseWriter, r *http.Request) {

@@ -6,9 +6,9 @@ services:
     build: 
       context: ../
       dockerfile: ./build/Calendar.dockerfile
-    expose:
-      - "80:8888" #http
-      - "90:9999" #grpc
+    ports:
+      - "8888:80" #http
+      - "9999:90" #grpc
     depends_on:
       - migrator
     networks:
@@ -45,11 +45,11 @@ services:
       POSTGRES_DB: '${DATABASE_NAME:-calendar}'
       POSTGRES_USER: '${DATABASE_USER:-calendar_user}'
       POSTGRES_PASSWORD: '${DATABASE_PASSWORD:-secret}'
-      PGDATA: '/var/lib/postgresql/data'
+      # PGDATA: '/var/lib/postgresql/data'
     ports: 
       - '${DATABASE_PORT:-5432}:5432'
-    volumes:
-        - calendar_postgres:/var/lib/postgresql/data
+    # volumes:
+        # - calendar_postgres:/var/lib/postgresql/data
     networks:
       calendar_network:
         ipv4_address:  10.5.0.5
