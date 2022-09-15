@@ -98,7 +98,7 @@ func (s *Scheduler) connectToBroker() error {
 
 	for {
 		currentTry++
-		err := s.ensureDBConnected()
+		err := (*s.adapter).InitProducer()
 
 		if err == nil {
 			(*s.logg).Info("[Scheduler] Connected to broker")
