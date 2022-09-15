@@ -4,15 +4,17 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Update event via HTTP", func() {
+	baseURL := os.Getenv("CALENDAR_API_BASE_URL")
 	BeforeEach(func() {
 		resp, err := http.Post(
-			"http://localhost:8888/events",
+			baseURL+"/events",
 			"application/json",
 			bytes.NewReader([]byte(`{
 					"id": "48cd8858-9103-4c6a-9a83-1d58307f071b",
@@ -31,7 +33,7 @@ var _ = Describe("Update event via HTTP", func() {
 	AfterEach(func() {
 		req, err := http.NewRequest(
 			http.MethodDelete,
-			"http://localhost:8888/events?id=48cd8858-9103-4c6a-9a83-1d58307f071b",
+			baseURL+"/events?id=48cd8858-9103-4c6a-9a83-1d58307f071b",
 			nil,
 		)
 		if err != nil {
@@ -49,7 +51,7 @@ var _ = Describe("Update event via HTTP", func() {
 	})
 
 	Context("with empty request", func() {
-		req, err := http.NewRequest(http.MethodPut, "http://localhost:8888/events", nil)
+		req, err := http.NewRequest(http.MethodPut, baseURL+"/events", nil)
 		if err != nil {
 			Fail("error while building request" + err.Error())
 		}
@@ -78,7 +80,7 @@ var _ = Describe("Update event via HTTP", func() {
 	})
 
 	Context("with invalid id", func() {
-		req, err := http.NewRequest(http.MethodPut, "http://localhost:8888/events", bytes.NewReader([]byte(`{
+		req, err := http.NewRequest(http.MethodPut, baseURL+"/events", bytes.NewReader([]byte(`{
 			"id": "ID",
 			"title": "first event",
 			"startsAt": "2022-08-23T15:04:05+07:00",
@@ -109,7 +111,7 @@ var _ = Describe("Update event via HTTP", func() {
 	})
 
 	Context("with invalid dates", func() {
-		req, err := http.NewRequest(http.MethodPut, "http://localhost:8888/events", bytes.NewReader([]byte(`{
+		req, err := http.NewRequest(http.MethodPut, baseURL+"/events", bytes.NewReader([]byte(`{
 			"id": "48cd8858-9103-4c6a-9a83-1d58307f071b",
 			"title": "first event",
 			"startsAt": "2022-08-23",
@@ -142,7 +144,7 @@ var _ = Describe("Update event via HTTP", func() {
 	Context("with busy dates", func() {
 		Describe("create second event", func() {
 			resp, err := http.Post(
-				"http://localhost:8888/events",
+				baseURL+"/events",
 				"application/json",
 				bytes.NewReader([]byte(`{
 						"id": "48cd8858-9103-4c6a-9a83-1d58307f071c",
@@ -159,7 +161,7 @@ var _ = Describe("Update event via HTTP", func() {
 		})
 
 		Describe("try to update fist event with date of second event", func() {
-			req, err := http.NewRequest(http.MethodPut, "http://localhost:8888/events", bytes.NewReader([]byte(`{
+			req, err := http.NewRequest(http.MethodPut, baseURL+"/events", bytes.NewReader([]byte(`{
 				"id": "48cd8858-9103-4c6a-9a83-1d58307f071b",
 				"title": "first event",
 				"startsAt": "2022-10-23T14:04:05+07:00",
@@ -197,7 +199,7 @@ var _ = Describe("Update event via HTTP", func() {
 		Describe("delete second event", func() {
 			req, err := http.NewRequest(
 				http.MethodDelete,
-				"http://localhost:8888/events?id=48cd8858-9103-4c6a-9a83-1d58307f071c",
+				baseURL+"/events?id=48cd8858-9103-4c6a-9a83-1d58307f071c",
 				nil,
 			)
 			if err != nil {
@@ -216,7 +218,7 @@ var _ = Describe("Update event via HTTP", func() {
 	})
 
 	Context("event not found", func() {
-		req, err := http.NewRequest(http.MethodPut, "http://localhost:8888/events", bytes.NewReader([]byte(`{
+		req, err := http.NewRequest(http.MethodPut, baseURL+"/events", bytes.NewReader([]byte(`{
 			"id": "48cd8858-9103-4c6a-9a83-1d58307f071z",
 			"title": "first event new name",
 			"startsAt": "2022-10-23T14:04:05+07:00",
@@ -252,7 +254,7 @@ var _ = Describe("Update event via HTTP", func() {
 	})
 
 	Context("with valid parameters", func() {
-		req, err := http.NewRequest(http.MethodPut, "http://localhost:8888/events", bytes.NewReader([]byte(`{
+		req, err := http.NewRequest(http.MethodPut, baseURL+"/events", bytes.NewReader([]byte(`{
 			"id": "48cd8858-9103-4c6a-9a83-1d58307f071b",
 			"title": "first event new name",
 			"startsAt": "2022-10-23T14:04:05+07:00",

@@ -2,21 +2,18 @@ version: "3"
 
 services:
   calendar:
-    container_name: calendar
+    container_name: calendar_app
     build: 
       context: ../
       dockerfile: ./build/Calendar.dockerfile
-    ports:
-      - "${HTTP_SERVER_PORT:-8888}:80" #http
-      - "${GRPC_SERVER_PORT:-9999}:90" #grpc
     depends_on:
       - migrator
     networks:
       calendar_network:
-        ipv4_address:  10.5.0.2
+        ipv4_address:  11.5.0.2
 
   scheduler:
-    container_name: scheduler
+    container_name: calendar_scheduler
     build: 
       context: ../
       dockerfile: ./build/Scheduler.dockerfile
@@ -25,83 +22,61 @@ services:
       - migrator
     networks:
       calendar_network:
-        ipv4_address:  10.5.0.3
+        ipv4_address:  11.5.0.3
    
   sender:
-    container_name: sender
+    container_name: calendar_sender
     build: 
       context: ../
       dockerfile: ./build/Sender.dockerfile
     depends_on:
       - kafka
+      - migrator
     networks:
       calendar_network:
-        ipv4_address:  10.5.0.4
+        ipv4_address:  11.5.0.4
 
   postgres:
-    container_name: postgres
+    container_name: calendar_postgres
     image: 'postgres:14-alpine'
     environment: 
       POSTGRES_DB: '${DATABASE_NAME:-calendar}'
       POSTGRES_USER: '${DATABASE_USER:-calendar_user}'
       POSTGRES_PASSWORD: '${DATABASE_PASSWORD:-secret}'
-      PGDATA: '/var/lib/postgresql/data'
-    ports: 
-      - '${DATABASE_PORT:-5432}:5432'
-    volumes:
-        - calendar_postgres:/var/lib/postgresql/data
     networks:
       calendar_network:
-        ipv4_address:  10.5.0.5
+        ipv4_address:  11.5.0.5
   
   zookeeper:
-    container_name: zookeeper
+    container_name: calendar_zookeeper
     image: 'bitnami/zookeeper:latest'
-    ports:
-      - '${ZOOKEEPER_PORT:-2181}:2181'
     environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+      ZOO_PORT_NUMBER: 2183
     networks:
       calendar_network:
-        ipv4_address:  10.5.0.6
+        ipv4_address:  11.5.0.6
 
   kafka:
-    container_name: kafka
+    container_name: calendar_kafka
     image: 'bitnami/kafka:3.2'
-    ports:
-      - '${KAFKA_PORT:-9093}:9093'
-      - '9092:9092'
     environment:
       KAFKA_BROKER_ID: 1
-      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:${ZOOKEEPER_PORT:-2181}
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2183
       ALLOW_PLAINTEXT_LISTENER: yes
       KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
-      KAFKA_CFG_LISTENERS: CLIENT://:9092,EXTERNAL://:9093
-      KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9092,EXTERNAL://localhost:9093
+      KAFKA_CFG_LISTENERS: CLIENT://:9992,EXTERNAL://:9993
+      KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9992,EXTERNAL://localhost:9993
       KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT
     depends_on:
       - zookeeper
     restart: always
     networks:
       calendar_network:
-        ipv4_address:  10.5.0.7
+        ipv4_address:  11.5.0.7
 
-  kafka-ui:
-    container_name: kafka_ui
-    image: 'provectuslabs/kafka-ui:latest'
-    ports:
-      - '${KAFKA_UI_PORT:-22181}:8080'
-    environment:
-      KAFKA_CLUSTERS_0_NAME: local
-      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
-    depends_on:
-      - kafka
-    networks:
-      calendar_network:
-        ipv4_address:  10.5.0.8
-  
   migrator:
-    container_name: migrator
+    container_name: calendar_migrator
     build:
       context: ../
       dockerfile: ./build/Migrator.dockerfile
@@ -109,7 +84,7 @@ services:
       - postgres
     networks:
       calendar_network:
-        ipv4_address:  10.5.0.9
+        ipv4_address:  11.5.0.9
     volumes:
       - '../migrations:/go/migrations:ro'
     environment:
@@ -117,14 +92,24 @@ services:
       GOOSE_DRIVER: 'postgres'
       GOOSE_DBSTRING: 'host=postgres user=${DATABASE_USER:-calendar_user} password=${DATABASE_PASSWORD:-secret} dbname=${DATABASE_NAME:-calendar} port=5432'
 
-volumes:
-  calendar_postgres:
-    name: 'calendar-postgres-prod'
+  tester:
+    container_name: calendar_integration_tester
+    build:
+      context: ../
+      dockerfile: ./build/Tester.dockerfile
+    networks:
+      calendar_network:
+        ipv4_address:  11.5.0.10
+    volumes:
+      - '../:/go/src'
+    environment:
+      CALENDAR_API_BASE_URL: 'http://calendar:80'
+    
 
 networks:
   calendar_network:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.5.0.0/10
-          gateway: 10.5.0.1
+        - subnet: 11.5.0.0/10
+          gateway: 11.5.0.1

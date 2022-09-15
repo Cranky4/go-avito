@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -50,10 +51,11 @@ var events = []string{
 }
 
 var _ = Describe("Get events via HTTP", Ordered, func() {
+	baseURL := os.Getenv("CALENDAR_API_BASE_URL")
 	BeforeAll(func() {
 		for _, ev := range events {
 			resp, err := http.Post(
-				"http://localhost:8888/events",
+				baseURL+"/events",
 				"application/json",
 				bytes.NewReader([]byte(ev)),
 			)
@@ -75,7 +77,7 @@ var _ = Describe("Get events via HTTP", Ordered, func() {
 	})
 
 	It("Get day events", func() {
-		resp, err := http.Get("http://localhost:8888/events?day=2022-06-01&period=day")
+		resp, err := http.Get(baseURL + "/events?day=2022-06-01&period=day")
 		if err != nil {
 			Fail("error while do http request" + err.Error())
 		}
@@ -94,7 +96,7 @@ var _ = Describe("Get events via HTTP", Ordered, func() {
 	})
 
 	It("Get week events", func() {
-		resp, err := http.Get("http://localhost:8888/events?day=2022-06-01&period=week")
+		resp, err := http.Get(baseURL + "/events?day=2022-06-01&period=week")
 		if err != nil {
 			Fail("error while do http request" + err.Error())
 		}
@@ -115,7 +117,7 @@ var _ = Describe("Get events via HTTP", Ordered, func() {
 	})
 
 	It("Get month events", func() {
-		resp, err := http.Get("http://localhost:8888/events?day=2022-06-01&period=month")
+		resp, err := http.Get(baseURL + "/events?day=2022-06-01&period=month")
 		if err != nil {
 			Fail("error while do http request" + err.Error())
 		}
@@ -148,7 +150,7 @@ var _ = Describe("Get events via HTTP", Ordered, func() {
 
 			req, err := http.NewRequest(
 				http.MethodDelete,
-				"http://localhost:8888/events?id="+event.ID,
+				baseURL+"/events?id="+event.ID,
 				nil,
 			)
 			if err != nil {

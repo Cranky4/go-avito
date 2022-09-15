@@ -61,6 +61,11 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
+integration-tests: up-integration-test
+	echo "optimistic waiting for docker ready" && sleep 3
+	docker-compose -f deployments/docker-compose.test.yaml run tester ginkgo
+	docker-compose -f deployments/docker-compose.test.yaml down --remove-orphans
+
 # Database
 install-goose:
 	(which goose > /dev/null) || go install github.com/pressly/goose/v3/cmd/goose@latest
@@ -115,5 +120,18 @@ log:
 down:
 	docker-compose -f deployments/docker-compose.yaml down --remove-orphans
 
-.PHONY: build run build-img run-img version test lint
+# Test env
+build-integration-test:
+	docker-compose -f deployments/docker-compose.test.yaml build
+up-integration-test:
+	DATABASE_NAME="calendar" \
+	DATABASE_USER="calendar_user" \
+	DATABASE_PASSWORD="secret" \
+	docker-compose -f deployments/docker-compose.test.yaml up -d
+log-integration-test:
+	docker-compose -f deployments/docker-compose.test.yaml logs tester -f
+down-integration-test:
+	docker-compose -f deployments/docker-compose.test.yaml down --remove-orphans
 
+
+.PHONY: build run build-img run-img version test lint

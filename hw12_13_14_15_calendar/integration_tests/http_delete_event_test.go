@@ -4,15 +4,18 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Delete event via HTTP", func() {
+	baseURL := os.Getenv("CALENDAR_API_BASE_URL")
+
 	BeforeEach(func() {
 		resp, err := http.Post(
-			"http://localhost:8888/events",
+			baseURL+"/events",
 			"application/json",
 			bytes.NewReader([]byte(`{
 					"id": "48cd8858-9103-4c6a-9a83-1d58307f071b",
@@ -31,7 +34,7 @@ var _ = Describe("Delete event via HTTP", func() {
 	AfterEach(func() {
 		req, err := http.NewRequest(
 			http.MethodDelete,
-			"http://localhost:8888/events?id=48cd8858-9103-4c6a-9a83-1d58307f071b",
+			baseURL+"/events?id=48cd8858-9103-4c6a-9a83-1d58307f071b",
 			nil,
 		)
 		if err != nil {
@@ -51,7 +54,7 @@ var _ = Describe("Delete event via HTTP", func() {
 	Context("event not found", func() {
 		req, err := http.NewRequest(
 			http.MethodDelete,
-			"http://localhost:8888/events?id=48cd8858-9103-4c6a-9a83-1d58307f071z",
+			baseURL+"/events?id=48cd8858-9103-4c6a-9a83-1d58307f071z",
 			nil,
 		)
 		if err != nil {
@@ -85,7 +88,7 @@ var _ = Describe("Delete event via HTTP", func() {
 	Context("event deleted", func() {
 		req, err := http.NewRequest(
 			http.MethodDelete,
-			"http://localhost:8888/events?id=48cd8858-9103-4c6a-9a83-1d58307f071b",
+			baseURL+"/events?id=48cd8858-9103-4c6a-9a83-1d58307f071b",
 			nil,
 		)
 		if err != nil {

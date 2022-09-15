@@ -4,21 +4,23 @@ import (
 	"bytes"
 	"io"
 	"net/http"
+	"os"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Create new event via HTTP", func() {
+	baseURL := os.Getenv("CALENDAR_API_BASE_URL")
+
 	Context("with empty request", func() {
 		resp, err := http.Post(
-			"http://localhost:8888/events",
+			baseURL+"/events",
 			"application/json",
 			nil,
 		)
 		if err != nil {
 			Fail("error while do http request" + err.Error())
-			return
 		}
 		defer resp.Body.Close()
 
@@ -38,15 +40,15 @@ var _ = Describe("Create new event via HTTP", func() {
 
 	Context("with invalid id", func() {
 		resp, err := http.Post(
-			"http://localhost:8888/events",
+			baseURL+"/events",
 			"application/json",
 			bytes.NewReader([]byte(`{
-					"id": "ID",
-					"title": "first event",
-					"startsAt": "2022-08-23T15:04:05+07:00",
-					"notify": "2022-08-23T15:04:05+07:00",
-					"endsAt": "2022-08-23T15:04:05+07:00"
-				}`)),
+				"id": "ID",
+				"title": "first event",
+				"startsAt": "2022-08-23T15:04:05+07:00",
+				"notify": "2022-08-23T15:04:05+07:00",
+				"endsAt": "2022-08-23T15:04:05+07:00"
+			}`)),
 		)
 		if err != nil {
 			Fail("error while do http request" + err.Error())
@@ -69,7 +71,7 @@ var _ = Describe("Create new event via HTTP", func() {
 
 	Context("with invalid datetime", func() {
 		resp, err := http.Post(
-			"http://localhost:8888/events",
+			baseURL+"/events",
 			"application/json",
 			bytes.NewReader([]byte(`{
 					"id": "48cd8858-9103-4c6a-9a83-1d58307f071b",
@@ -101,7 +103,7 @@ var _ = Describe("Create new event via HTTP", func() {
 	Context("with valid parameters", func() {
 		Describe("create first event", func() {
 			resp, err := http.Post(
-				"http://localhost:8888/events",
+				baseURL+"/events",
 				"application/json",
 				bytes.NewReader([]byte(`{
 					"id": "48cd8858-9103-4c6a-9a83-1d58307f071b",
@@ -133,7 +135,7 @@ var _ = Describe("Create new event via HTTP", func() {
 		Describe("delete first event", func() {
 			req, err := http.NewRequest(
 				http.MethodDelete,
-				"http://localhost:8888/events?id=48cd8858-9103-4c6a-9a83-1d58307f071b",
+				baseURL+"/events?id=48cd8858-9103-4c6a-9a83-1d58307f071b",
 				nil,
 			)
 			if err != nil {
@@ -168,7 +170,7 @@ var _ = Describe("Create new event via HTTP", func() {
 	Context("date is busy", func() {
 		Describe("create second event", func() {
 			resp, err := http.Post(
-				"http://localhost:8888/events",
+				baseURL+"/events",
 				"application/json",
 				bytes.NewReader([]byte(`{
 							"id": "48cd8858-9103-4c6a-9a83-1d58307f071c",
@@ -200,7 +202,7 @@ var _ = Describe("Create new event via HTTP", func() {
 
 		Describe("try to create third event with busy dates", func() {
 			resp, err := http.Post(
-				"http://localhost:8888/events",
+				baseURL+"/events",
 				"application/json",
 				bytes.NewReader([]byte(`{
 							"id": "48cd8858-9103-4c6a-9a83-1d58307f071d",
@@ -233,7 +235,7 @@ var _ = Describe("Create new event via HTTP", func() {
 		Describe("delete second event", func() {
 			req, err := http.NewRequest(
 				http.MethodDelete,
-				"http://localhost:8888/events?id=48cd8858-9103-4c6a-9a83-1d58307f071c",
+				baseURL+"/events?id=48cd8858-9103-4c6a-9a83-1d58307f071c",
 				nil,
 			)
 			if err != nil {
