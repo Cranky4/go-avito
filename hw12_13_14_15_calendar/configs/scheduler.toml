@@ -8,7 +8,7 @@ connectionTryDelay = "3s"
 
 [broker]
 adapter = "kafka"
-address = "kafka:9093"
+address = "localhost:9093"
 topic = "notifications"
 version = "3.2.0"
 maxConnectionTries = 5

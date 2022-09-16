@@ -102,6 +102,8 @@ up-dev:
 
 down-dev:
 	docker-compose -f deployments/docker-compose.dev.yaml down
+logs-dev:
+	docker-compose -f deployments/docker-compose.dev.yaml logs calendar scheduler sender migrator -f
 
 # Prod
 build:
