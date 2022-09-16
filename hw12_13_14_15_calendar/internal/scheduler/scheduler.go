@@ -75,10 +75,13 @@ O:
 			if err != nil {
 				(*s.logg).Error(err.Error())
 			} else {
-				(*s.adapter).Produce(iternalbroker.Message{
+				err := (*s.adapter).Produce(iternalbroker.Message{
 					Topic: s.conf.Broker.Topic,
 					Text:  string(n),
 				})
+				if err != nil {
+					(*s.logg).Error(err.Error())
+				}
 			}
 		}
 	}
@@ -98,7 +101,7 @@ func (s *Scheduler) connectToBroker() error {
 
 	for {
 		currentTry++
-		err := s.ensureDBConnected()
+		err := (*s.adapter).InitProducer()
 
 		if err == nil {
 			(*s.logg).Info("[Scheduler] Connected to broker")
