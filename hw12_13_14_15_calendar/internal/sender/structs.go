@@ -15,8 +15,13 @@ type Adapter interface {
 type Config struct {
 	Logger LoggerConf
 	Broker iternalbroker.BrokerConf
+	File   FileConf
 }
 
 type LoggerConf struct {
 	Level string
+}
+
+type FileConf struct {
+	Path string
 }
