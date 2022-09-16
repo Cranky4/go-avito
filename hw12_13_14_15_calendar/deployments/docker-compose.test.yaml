@@ -1,0 +1,120 @@
+version: "3"
+
+services:
+  calendar:
+    container_name: calendar
+    build: 
+      context: ../
+      dockerfile: ./build/Calendar.dockerfile
+    depends_on:
+      - migrator
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.2
+
+  scheduler:
+    container_name: scheduler
+    build: 
+      context: ../
+      dockerfile: ./build/Scheduler.dockerfile
+    depends_on:
+      - kafka
+      - migrator
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.3
+   
+  sender:
+    container_name: sender
+    build: 
+      context: ../
+      dockerfile: ./build/Sender.dockerfile
+    depends_on:
+      - kafka
+    volumes:
+      - "../logs:/logs"
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.4
+
+  postgres:
+    container_name: postgres
+    image: 'postgres:14-alpine'
+    environment: 
+      POSTGRES_DB: '${DATABASE_NAME:-calendar}'
+      POSTGRES_USER: '${DATABASE_USER:-calendar_user}'
+      POSTGRES_PASSWORD: '${DATABASE_PASSWORD:-secret}'
+    ports: 
+     - '55432:5432'
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.5
+  
+  zookeeper:
+    container_name: zookeeper
+    image: 'bitnami/zookeeper:latest'
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: yes
+      ZOO_PORT_NUMBER: 2181
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.6
+
+  kafka:
+    container_name: kafka
+    image: 'bitnami/kafka:3.2'
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
+      ALLOW_PLAINTEXT_LISTENER: yes
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CLIENT:PLAINTEXT
+      KAFKA_CFG_LISTENERS: CLIENT://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: CLIENT://kafka:9092
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: CLIENT
+    depends_on:
+      - zookeeper
+    restart: always
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.7
+  
+  migrator:
+    container_name: migrator
+    build:
+      context: ../
+      dockerfile: ./build/Migrator.dockerfile
+    depends_on:
+      - postgres
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.9
+    volumes:
+      - '../migrations:/go/migrations:ro'
+    environment:
+      CODE_DIR: '/go/migrations'
+      GOOSE_DRIVER: 'postgres'
+      GOOSE_DBSTRING: 'host=postgres user=${DATABASE_USER:-calendar_user} password=${DATABASE_PASSWORD:-secret} dbname=${DATABASE_NAME:-calendar} port=5432'
+
+  tester:
+    container_name: calendar_integration_tester
+    build:
+      context: ../
+      dockerfile: ./build/Tester.dockerfile
+    networks:
+      calendar_network:
+        ipv4_address:  10.5.0.10
+    volumes:
+      - '../integration_tests:/go/src/integration_tests'
+      - '../go.mod:/go/src/go.mod:ro'
+      - '../go.sum:/go/src/go.sum:ro'
+      - '../logs:/logs'
+    environment:
+      CALENDAR_API_BASE_URL: 'http://calendar:80'
+
+networks:
+  calendar_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.5.0.0/10
+          gateway: 10.5.0.1

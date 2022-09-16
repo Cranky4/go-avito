@@ -3,6 +3,8 @@ package integrationtests_test
 import (
 	"bufio"
 	"bytes"
+	"errors"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -37,21 +39,38 @@ var _ = Describe("Get events via HTTP", Ordered, func() {
 	})
 
 	It("check email log", func() {
-		time.Sleep(4)
+		tries := 20
+		timout := 1 * time.Second
 
-		f, err := os.Open("./logs/email.log")
+		try := 1
 
-		Expect(err).To(BeNil())
+		for {
+			f, err := os.Open("/logs/email.log")
+			if try > tries {
+				f.Close()
+				Fail("Maximum tries to read email log is reached")
+			}
 
-		defer f.Close()
+			Expect(err).To(BeNil())
 
-		r := bufio.NewReader(f)
+			r := bufio.NewReader(f)
+			line, err := r.ReadString('\n')
 
-		line, err := r.ReadString('\n')
+			if errors.Is(err, io.EOF) {
+				f.Close()
+				time.Sleep(timout)
+				try++
+				continue
+			}
 
-		Expect(err).To(BeNil())
+			Expect(err).To(BeNil())
 
-		Expect(line).To(Equal("[NOTIFICATION SENT] first event"))
+			Expect(line).To(Equal("[NOTIFICATION SENT] {\"ID\":\"38cd8858-9103-4c6a-9a83-1d58307f071a\",\"Title\"" +
+				":\"first event\",\"StartedAt\":\"2022-06-01T15:00:00Z\",\"UserID\":\"\"} \n"))
+
+			f.Close()
+			break
+		}
 	})
 
 	AfterAll(func() {

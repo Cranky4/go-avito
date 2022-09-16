@@ -31,7 +31,7 @@ ENV BIN_FILE "/opt/scheduler/scheduler-app"
 COPY --from=builder ${BIN_FILE} ${BIN_FILE}
 
 ENV CONFIG_FILE /etc/scheduler/config.toml
-COPY ./configs/scheduler.toml ${CONFIG_FILE}
+COPY ./configs/docker/scheduler.toml ${CONFIG_FILE}
 
 RUN mkdir logs
 

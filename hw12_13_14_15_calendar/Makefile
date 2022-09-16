@@ -61,9 +61,10 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
-integration-tests: up-integration-test
-	echo "optimistic waiting for docker ready" && sleep 3
-	docker-compose -f deployments/docker-compose.test.yaml run tester ginkgo
+integration-tests: 
+	docker-compose -f deployments/docker-compose.test.yaml up -d --build
+	echo "optimistic waiting for docker ready" && sleep 2
+	docker-compose -f deployments/docker-compose.test.yaml run tester ginkgo || docker-compose -f deployments/docker-compose.test.yaml down --remove-orphans
 	docker-compose -f deployments/docker-compose.test.yaml down --remove-orphans
 
 # Database
@@ -122,18 +123,14 @@ log:
 down:
 	docker-compose -f deployments/docker-compose.yaml down --remove-orphans
 
-# Test env
-build-integration-test:
+# Tests
+build-integration-tests:
 	docker-compose -f deployments/docker-compose.test.yaml build
-up-integration-test:
-	DATABASE_NAME="calendar" \
-	DATABASE_USER="calendar_user" \
-	DATABASE_PASSWORD="secret" \
+up-integration-tests:
 	docker-compose -f deployments/docker-compose.test.yaml up -d
-log-integration-test:
-	docker-compose -f deployments/docker-compose.test.yaml logs tester -f
-down-integration-test:
+log-integration-tests:
+	docker-compose -f deployments/docker-compose.test.yaml logs calendar scheduler sender migrator -f
+down-integration-tests:
 	docker-compose -f deployments/docker-compose.test.yaml down --remove-orphans
-
 
 .PHONY: build run build-img run-img version test lint
