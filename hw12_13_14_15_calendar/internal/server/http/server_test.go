@@ -309,7 +309,7 @@ func TestEventApiHandlerSuccess(t *testing.T) {
 
 		data, err := io.ReadAll(res.Body)
 		require.Nil(t, err)
-		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, http.StatusCreated, w.Code)
 		require.Empty(t, data)
 
 		// get
@@ -385,7 +385,7 @@ func TestEventApiHandlerSuccess(t *testing.T) {
 
 		data, err = io.ReadAll(res.Body)
 		require.Nil(t, err)
-		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, http.StatusCreated, w.Code)
 		require.Empty(t, data)
 
 		// get
@@ -417,7 +417,7 @@ func TestEventApiHandlerSuccess(t *testing.T) {
 
 		data, err = io.ReadAll(res.Body)
 		require.Nil(t, err)
-		require.Equal(t, http.StatusOK, w.Code)
+		require.Equal(t, http.StatusNoContent, w.Code)
 		require.Empty(t, data)
 
 		// get
