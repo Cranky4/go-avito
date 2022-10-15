@@ -2,6 +2,45 @@ syntax = "proto3";
 
 package event;
 
+option go_package="./EventService";
+
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+
 message Event {
-    // TODO
+    string id = 1;
+    string title = 2;
+    google.protobuf.Timestamp startsAt = 3;
+    google.protobuf.Timestamp endsAt = 4;
+}
+
+service EventService {
+    rpc CreateEvent(CreateEventRequest) returns (google.protobuf.Empty) {};
+    rpc UpdateEvent(UpdateEventRequest) returns (google.protobuf.Empty) {};
+    rpc DeleteEvent(DeleteEventRequest) returns (google.protobuf.Empty) {};
+    rpc GetDayEvents(google.protobuf.Timestamp) returns (EventsResponse);
+    rpc GetWeekEvents(google.protobuf.Timestamp) returns (EventsResponse);
+    rpc GetMonthEvents(google.protobuf.Timestamp) returns (EventsResponse);
+}
+
+message CreateEventRequest {
+    string id = 1;
+    string title = 2;
+    google.protobuf.Timestamp startsAt = 3;
+    google.protobuf.Timestamp endsAt = 4;
+}
+
+message UpdateEventRequest {
+    string id = 1;
+    string title = 2;
+    google.protobuf.Timestamp startsAt = 3;
+    google.protobuf.Timestamp endsAt = 4;
+}
+
+message DeleteEventRequest {
+    string id = 1;
+}
+
+message EventsResponse {
+    repeated Event events = 1;
 }

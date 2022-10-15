@@ -10,3 +10,7 @@ dsn = "postgres://calendar_user:secret@localhost:55432/calendar"
 [http]
 addr = ":8080"
 requestLogFile = "./logs/http-server.log"
+
+[grpc]
+addr = ":9000"
+requestLogFile = "./logs/grpc-server.log"

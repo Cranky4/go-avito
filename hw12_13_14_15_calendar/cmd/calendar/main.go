@@ -10,6 +10,7 @@ import (
 
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/app"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/logger"
+	internalgrpc "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/server/http"
 	memorystorage "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/storage/memory"
 	sqlstorage "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/storage/sql"
@@ -48,8 +49,25 @@ func main() {
 
 	calendar := app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg, calendar, config.HTTP.Addr, config.HTTP.RequestLogFile)
-	server.Start(ctx)
+	var server *internalhttp.Server
+	go func() {
+		server = internalhttp.NewServer(logg, calendar, config.HTTP.Addr, config.HTTP.RequestLogFile)
+		if err := server.Start(ctx); err != nil {
+			logg.Error("failed to start http server: " + err.Error())
+			cancel()
+			os.Exit(1)
+		}
+	}()
+
+	var grpcServer *internalgrpc.Server
+	go func() {
+		grpcServer = internalgrpc.New(calendar, logg, config.GRPC.RequestLogFile)
+		if err := grpcServer.Start(ctx, config.GRPC.Addr); err != nil {
+			logg.Error("failed to start grpc server: " + err.Error())
+			cancel()
+			os.Exit(1)
+		}
+	}()
 
 	go func() {
 		<-ctx.Done()
@@ -62,6 +80,9 @@ func main() {
 			logg.Error("failed to stop http server: " + err.Error())
 		}
 
+		// отключение grpc сервера
+		grpcServer.Stop(ctx)
+
 		// отключение от базы данных
 		s, ok := storage.(*sqlstorage.Storage)
 		if ok {
@@ -71,9 +92,5 @@ func main() {
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(ctx); err != nil {
-		logg.Error("failed to start http server: " + err.Error())
-		cancel()
-		os.Exit(1) //nolint:gocritic
-	}
+	<-ctx.Done()
 }

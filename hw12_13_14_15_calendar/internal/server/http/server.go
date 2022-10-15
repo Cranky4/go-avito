@@ -2,7 +2,6 @@ package internalhttp
 
 import (
 	"context"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -33,8 +32,6 @@ type Application interface {
 }
 
 func NewServer(logger Logger, app Application, addr, requestLogFile string) *Server {
-	handler := &httpHandler{}
-
 	file, err := os.OpenFile(requestLogFile, os.O_RDWR|os.O_CREATE|os.O_APPEND, 0o644)
 	if err != nil {
 		log.Fatal(err)
@@ -42,7 +39,8 @@ func NewServer(logger Logger, app Application, addr, requestLogFile string) *Ser
 	requestLogger := log.New(file, "", log.LstdFlags|log.Lshortfile)
 
 	mux := http.NewServeMux()
-	mux.Handle("/", loggingMiddleware(handler, requestLogger))
+	mux.Handle("/events", loggingMiddleware(NewEventAPIHandler(app), requestLogger))
+	mux.Handle("/", loggingMiddleware(&DefaultAPIHandler{}, requestLogger))
 
 	httpServer := &http.Server{
 		ReadHeaderTimeout: 3 * time.Second,
@@ -72,12 +70,4 @@ func (s *Server) Stop(ctx context.Context) error {
 	s.logger.Info("http server stopped...")
 
 	return nil
-}
-
-type httpHandler struct{}
-
-func (h *httpHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode("hello world")
 }

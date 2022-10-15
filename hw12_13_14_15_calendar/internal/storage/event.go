@@ -20,8 +20,13 @@ func NewEventID() EventID {
 	return EventID{uuid.New()}
 }
 
-func NewEventIDFromString(id string) EventID {
-	return EventID{uuid.MustParse(id)}
+func NewEventIDFromString(id string) (EventID, error) {
+	uuid, err := uuid.Parse(id)
+	if err != nil {
+		return EventID{}, err
+	}
+
+	return EventID{uuid}, nil
 }
 
 type Event struct {
