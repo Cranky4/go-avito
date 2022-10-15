@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"net"
+	"os"
 	"time"
 
 	iternalbroker "github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/broker"
@@ -31,20 +33,34 @@ func (s *Sender) Start() error {
 		return err
 	}
 
-	(*s.logg).Info("sender started")
-
 	go func(notifications <-chan iternalbroker.Message) {
+		f, err := os.Create(s.conf.File.Path)
+		if err != nil {
+			(*s.logg).Error(err.Error())
+			return
+		}
+		defer f.Close()
+
 	L:
 		for {
 			select {
 			case <-s.ctx.Done():
 				break L
-			case msg := <-notifications:
-				// send here
-				fmt.Printf("[NOTIFICATION SENT] %s\n", msg.Text)
+			case msg, opened := <-notifications:
+				if !opened {
+					break L
+				}
+
+				f.WriteString(fmt.Sprintf("[NOTIFICATION SENT] %s \n", msg.Text))
+
+				log.Printf("[NOTIFICATION SENT] %s\n", msg.Text)
 			}
 		}
+
+		(*s.logg).Info("sender stopped")
 	}(notifications)
+
+	(*s.logg).Info("sender started")
 
 	return nil
 }

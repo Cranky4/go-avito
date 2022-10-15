@@ -61,6 +61,12 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
+integration-tests: 
+	docker-compose -f deployments/docker-compose.test.yaml up -d --build
+	echo "optimistic waiting for docker ready" && sleep 2
+	docker-compose -f deployments/docker-compose.test.yaml run tester ginkgo || docker-compose -f deployments/docker-compose.test.yaml down --remove-orphans
+	docker-compose -f deployments/docker-compose.test.yaml down --remove-orphans
+
 # Database
 install-goose:
 	(which goose > /dev/null) || go install github.com/pressly/goose/v3/cmd/goose@latest
@@ -99,5 +105,32 @@ down-dev:
 	docker-compose -f deployments/docker-compose.dev.yaml down
 logs-dev:
 	docker-compose -f deployments/docker-compose.dev.yaml logs calendar scheduler sender migrator -f
+
+# Prod
+build:
+	docker-compose -f deployments/docker-compose.yaml build
+up:
+	DATABASE_NAME="calendar" \
+	DATABASE_USER="calendar_user" \
+	DATABASE_PASSWORD="secret" \
+	DATABASE_PORT="55432" \
+	ZOOKEEPER_PORT="2181" \
+	KAFKA_PORT="9093" \
+	KAFKA_UI_PORT="22181" \
+	docker-compose -f deployments/docker-compose.yaml up -d
+log:
+	docker-compose -f deployments/docker-compose.yaml logs calendar scheduler sender migrator -f
+down:
+	docker-compose -f deployments/docker-compose.yaml down --remove-orphans
+
+# Tests
+build-integration-tests:
+	docker-compose -f deployments/docker-compose.test.yaml build
+up-integration-tests:
+	docker-compose -f deployments/docker-compose.test.yaml up -d
+log-integration-tests:
+	docker-compose -f deployments/docker-compose.test.yaml logs calendar scheduler sender migrator -f
+down-integration-tests:
+	docker-compose -f deployments/docker-compose.test.yaml down --remove-orphans
 
 .PHONY: build run build-img run-img version test lint

@@ -32,7 +32,6 @@ func main() {
 	}
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
-	defer cancel()
 
 	config := NewConfig(configFile)
 	logg := logger.New(config.Logger.Level, log.LstdFlags)
@@ -46,7 +45,7 @@ func main() {
 			if err != nil {
 				logg.Error(err.Error())
 				cancel()
-				return
+				os.Exit(1)
 			}
 		}
 	} else {
@@ -74,6 +73,7 @@ func main() {
 			os.Exit(1)
 		}
 	}()
+	defer cancel()
 
 	go func() {
 		<-ctx.Done()

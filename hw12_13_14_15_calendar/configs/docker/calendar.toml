@@ -1,0 +1,18 @@
+[logger]
+level = "DEBUG"
+
+[storage]
+driver = "sql" 
+
+[database]
+dsn = "postgres://calendar_user:secret@postgres:5432/calendar"
+maxConnectionTries = 5
+connectionTryDelay = "3s"
+
+[http]
+addr = ":80"
+requestLogFile = "./logs/http-server.log"
+
+[grpc]
+addr = ":90"
+requestLogFile = "./logs/grpc-server.log"

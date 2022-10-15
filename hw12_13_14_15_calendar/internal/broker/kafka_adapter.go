@@ -3,7 +3,6 @@ package iternalbroker
 import (
 	"context"
 	"fmt"
-	"log"
 
 	"github.com/Shopify/sarama"
 )
@@ -49,7 +48,7 @@ func (a *KafkaAdapter) InitProducer() error {
 		return err
 	}
 
-	p, err := createProducer(a.config.Address)
+	p, err := createProducer(a.config)
 	if err != nil {
 		return err
 	}
@@ -73,12 +72,12 @@ func (a *KafkaAdapter) Produce(message Message) error {
 }
 
 func (a *KafkaAdapter) InitConsumer() error {
-	config := sarama.NewConfig()
-
 	ver, err := sarama.ParseKafkaVersion(a.config.Version)
 	if err != nil {
 		return err
 	}
+
+	config := sarama.NewConfig()
 	config.Version = ver
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
@@ -152,9 +151,11 @@ func (a *KafkaAdapter) Consume(ctx context.Context, topic string) (<-chan Messag
 				break L
 			default:
 				if err := (*a.consumerGroup).Consume(ctx, []string{topic}, &consumerHandler); err != nil {
-					log.Panicf("Error from consumer: %v", err)
+					a.logg.Error(err.Error())
+					break L
 				}
 				if ctx.Err() != nil {
+					a.logg.Error(ctx.Err().Error())
 					break L
 				}
 			}
@@ -178,15 +179,21 @@ func (a *KafkaAdapter) CloseConsumer() error {
 	return nil
 }
 
-func createProducer(broker string) (*sarama.SyncProducer, error) {
+func createProducer(conf BrokerConf) (*sarama.SyncProducer, error) {
+	ver, err := sarama.ParseKafkaVersion(conf.Version)
+	if err != nil {
+		return nil, err
+	}
+
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 10
 	config.Producer.Return.Successes = true
+	config.Version = ver
 
 	// TLS?
 
-	producer, err := sarama.NewSyncProducer([]string{broker}, config)
+	producer, err := sarama.NewSyncProducer([]string{conf.Address}, config)
 	if err != nil {
 		return nil, err
 	}
