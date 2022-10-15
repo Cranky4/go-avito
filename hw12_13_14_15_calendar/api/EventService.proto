@@ -12,6 +12,7 @@ message Event {
     string title = 2;
     google.protobuf.Timestamp startsAt = 3;
     google.protobuf.Timestamp endsAt = 4;
+    google.protobuf.Timestamp notifyAfter = 5;
 }
 
 service EventService {
@@ -28,6 +29,7 @@ message CreateEventRequest {
     string title = 2;
     google.protobuf.Timestamp startsAt = 3;
     google.protobuf.Timestamp endsAt = 4;
+    google.protobuf.Timestamp notifyAfter = 5;
 }
 
 message UpdateEventRequest {
@@ -35,6 +37,7 @@ message UpdateEventRequest {
     string title = 2;
     google.protobuf.Timestamp startsAt = 3;
     google.protobuf.Timestamp endsAt = 4;
+    google.protobuf.Timestamp notifyAfter = 5;
 }
 
 message DeleteEventRequest {

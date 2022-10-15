@@ -16,6 +16,11 @@ type EventID struct {
 	uuid.UUID
 }
 
+type NotifyAfter struct {
+	Time  time.Time
+	IsSet bool
+}
+
 func NewEventID() EventID {
 	return EventID{uuid.New()}
 }
@@ -33,6 +38,7 @@ type Event struct {
 	ID               EventID
 	Title            string
 	StartsAt, EndsAt time.Time // дата и время начала и завершения события
+	NotifyAfter      NotifyAfter
 }
 
 type EventStorage interface {

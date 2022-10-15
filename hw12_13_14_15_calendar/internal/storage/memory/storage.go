@@ -1,6 +1,7 @@
 package memorystorage
 
 import (
+	"sort"
 	"sync"
 	"time"
 
@@ -76,6 +77,10 @@ func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error)
 			list = append(list, event)
 		}
 	}
+
+	sort.Slice(list, func(i, j int) bool {
+		return list[i].ID.String() > list[j].ID.String()
+	})
 
 	return list, nil
 }

@@ -9,7 +9,7 @@ import (
 
 func TestLogger(t *testing.T) {
 	t.Run("debug level", func(t *testing.T) {
-		logg := New("debug")
+		logg := New("debug", 0)
 		logg.debugPrefix = "D"
 		logg.infoPrefix = "I"
 		logg.warnPrefix = "W"
@@ -27,7 +27,7 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("info level", func(t *testing.T) {
-		logg := New("info")
+		logg := New("info", 0)
 		logg.debugPrefix = "D"
 		logg.infoPrefix = "I"
 		logg.warnPrefix = "W"
@@ -45,7 +45,7 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("warn level", func(t *testing.T) {
-		logg := New("warn")
+		logg := New("warn", 0)
 		logg.debugPrefix = "D"
 		logg.infoPrefix = "I"
 		logg.warnPrefix = "W"
@@ -63,7 +63,7 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("error level", func(t *testing.T) {
-		logg := New("error")
+		logg := New("error", 0)
 		logg.debugPrefix = "D"
 		logg.infoPrefix = "I"
 		logg.warnPrefix = "W"
@@ -81,7 +81,7 @@ func TestLogger(t *testing.T) {
 	})
 
 	t.Run("off level", func(t *testing.T) {
-		logg := New("off")
+		logg := New("off", 0)
 		logg.debugPrefix = "D"
 		logg.infoPrefix = "I"
 		logg.warnPrefix = "W"

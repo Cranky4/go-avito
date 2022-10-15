@@ -38,8 +38,8 @@ type Logger struct {
 	logg                                             *log.Logger
 }
 
-func New(level string) *Logger {
-	logg := log.New(os.Stdout, "", 0)
+func New(level string, flags int) *Logger {
+	logg := log.New(os.Stdout, "", flags)
 	return &Logger{
 		level:       NewLogLevel(level),
 		debugPrefix: "[DEBUG]",

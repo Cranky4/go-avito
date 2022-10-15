@@ -4,30 +4,32 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"net"
 	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/logger"
 	"github.com/Cranky4/go-avito/hw12_13_14_15_calendar/internal/storage"
-	// init pgsql.
-	_ "github.com/jackc/pgx/stdlib"
+	_ "github.com/jackc/pgx/stdlib" // init pgsql.
 )
 
 var ErrNotConnected = errors.New("not connected to database")
 
 type Storage struct {
-	dsn     string
-	db      *sql.DB
-	context context.Context
+	conf DatabaseConf
+	db   *sql.DB
+	ctx  context.Context
+	logg *logger.Logger
 }
 
-func New(ctx context.Context, dsn string) *Storage {
-	return &Storage{dsn: dsn, context: ctx}
+func New(ctx context.Context, config DatabaseConf, logg *logger.Logger) *Storage {
+	return &Storage{conf: config, ctx: ctx, logg: logg}
 }
 
 func (s *Storage) ensureConnected() error {
 	if s.db == nil {
-		if err := s.Connect(s.context); err != nil {
+		if err := s.Connect(s.ctx); err != nil {
 			return err
 		}
 	}
@@ -36,13 +38,47 @@ func (s *Storage) ensureConnected() error {
 }
 
 func (s *Storage) Connect(ctx context.Context) error {
-	db, err := sql.Open("pgx", s.dsn)
+	db, err := sql.Open("pgx", s.conf.Dsn)
 	if err != nil {
 		return err
 	}
 	s.db = db
 
-	return nil
+	delay, err := time.ParseDuration(s.conf.ConnectionTryDelay)
+	if err != nil {
+		return err
+	}
+	pause := time.NewTicker(delay)
+	defer pause.Stop()
+
+	currentTry := 1
+
+	for {
+		currentTry++
+		err := s.db.Ping()
+
+		if err == nil {
+			s.logg.Info("[Scheduler] Connected to database")
+
+			return nil
+		}
+
+		opError := new(net.OpError)
+		if !errors.As(err, &opError) {
+			return err
+		}
+
+		s.logg.Info("[Scheduler] Waiting for database connection...")
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-pause.C:
+			if currentTry > s.conf.MaxConnectionTries {
+				return errors.New("[Scheduler] Maximum tries reached")
+			}
+		}
+	}
 }
 
 func (s *Storage) Close(ctx context.Context) error {
@@ -68,12 +104,19 @@ func (s *Storage) CreateEvent(event storage.Event) error {
 		return storage.ErrDateBusy
 	}
 
+	var notifyAfter sql.NullTime
+	if event.NotifyAfter.IsSet {
+		notifyAfter.Time = event.NotifyAfter.Time
+		notifyAfter.Valid = true
+	}
+
 	err = s.execTransactionally(
-		"INSERT INTO events(id, title, starts_at, ends_at) VALUES($1, $2, $3, $4)",
+		"INSERT INTO events(id, title, starts_at, ends_at, notify_after) VALUES($1, $2, $3, $4, $5)",
 		event.ID.String(),
 		event.Title,
 		event.StartsAt,
 		event.EndsAt,
+		notifyAfter,
 	)
 
 	if err != nil {
@@ -119,7 +162,7 @@ func (s *Storage) IsPeriodBusy(dateFrom, dateTo time.Time, excludeIds []string) 
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(s.context, params...)
+	rows, err := stmt.QueryContext(s.ctx, params...)
 	if err != nil {
 		return false, err
 	}
@@ -145,13 +188,13 @@ func (s *Storage) GetEvent(id storage.EventID) (storage.Event, error) {
 		return storage.Event{}, err
 	}
 
-	stmt, err := s.db.Prepare("SELECT title, starts_at, ends_at FROM events WHERE id=$1")
+	stmt, err := s.db.Prepare("SELECT title, starts_at, ends_at, notify_after FROM events WHERE id=$1")
 	if err != nil {
 		return storage.Event{}, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(s.context, id.String())
+	rows, err := stmt.QueryContext(s.ctx, id.String())
 	if err != nil {
 		return storage.Event{}, err
 	}
@@ -161,11 +204,12 @@ func (s *Storage) GetEvent(id storage.EventID) (storage.Event, error) {
 
 	var title string
 	var startsAt, endsAt time.Time
+	var notifyAfterHandler sql.NullTime
 
 	found := false
 
 	if rows.Next() {
-		err = rows.Scan(&title, &startsAt, &endsAt)
+		err = rows.Scan(&title, &startsAt, &endsAt, &notifyAfterHandler)
 		if err != nil {
 			return storage.Event{}, err
 		}
@@ -177,11 +221,18 @@ func (s *Storage) GetEvent(id storage.EventID) (storage.Event, error) {
 		return storage.Event{}, storage.ErrEventNotFound
 	}
 
+	var notifyAfter storage.NotifyAfter
+	if notifyAfterHandler.Valid {
+		notifyAfter.Time = notifyAfterHandler.Time
+		notifyAfter.IsSet = true
+	}
+
 	return storage.Event{
-		ID:       id,
-		Title:    title,
-		StartsAt: startsAt,
-		EndsAt:   endsAt,
+		ID:          id,
+		Title:       title,
+		StartsAt:    startsAt,
+		EndsAt:      endsAt,
+		NotifyAfter: notifyAfter,
 	}, nil
 }
 
@@ -203,12 +254,19 @@ func (s *Storage) UpdateEvent(id storage.EventID, event storage.Event) error {
 		return storage.ErrDateBusy
 	}
 
+	var notifyAfter sql.NullTime
+	if event.NotifyAfter.IsSet {
+		notifyAfter.Time = event.NotifyAfter.Time
+		notifyAfter.Valid = true
+	}
+
 	err = s.execTransactionally(
-		"UPDATE events SET title=$2, starts_at=$3, ends_at=$4 WHERE id=$1",
+		"UPDATE events SET title=$2, starts_at=$3, ends_at=$4, notify_after=$5 WHERE id=$1",
 		event.ID.String(),
 		event.Title,
 		event.StartsAt,
 		event.EndsAt,
+		notifyAfter,
 	)
 
 	if err != nil {
@@ -224,13 +282,15 @@ func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error)
 		return []storage.Event{}, err
 	}
 
-	stmt, err := s.db.Prepare("SELECT id, title, starts_at, ends_at FROM events WHERE starts_at >= $1 AND starts_at < $2")
+	stmt, err := s.db.Prepare(
+		"SELECT id, title, starts_at, ends_at, notify_after  FROM events WHERE starts_at >= $1 AND starts_at < $2",
+	)
 	if err != nil {
 		return []storage.Event{}, err
 	}
 	defer stmt.Close()
 
-	rows, err := stmt.QueryContext(s.context, dateFrom, dateTo)
+	rows, err := stmt.QueryContext(s.ctx, dateFrom, dateTo)
 	if err != nil {
 		return []storage.Event{}, err
 	}
@@ -243,9 +303,10 @@ func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error)
 	var id string
 	var title string
 	var startsAt, endsAt time.Time
+	var notifyAfterHandler sql.NullTime
 
 	for rows.Next() {
-		err = rows.Scan(&id, &title, &startsAt, &endsAt)
+		err = rows.Scan(&id, &title, &startsAt, &endsAt, &notifyAfterHandler)
 		if err != nil {
 			return []storage.Event{}, err
 		}
@@ -256,11 +317,18 @@ func (s *Storage) GetEvents(dateFrom, dateTo time.Time) ([]storage.Event, error)
 			return []storage.Event{}, err
 		}
 
+		var notifyAfter storage.NotifyAfter
+		if notifyAfterHandler.Valid {
+			notifyAfter.IsSet = true
+			notifyAfter.Time = notifyAfterHandler.Time
+		}
+
 		events = append(events, storage.Event{
-			ID:       eventID,
-			Title:    title,
-			StartsAt: startsAt,
-			EndsAt:   endsAt,
+			ID:          eventID,
+			Title:       title,
+			StartsAt:    startsAt,
+			EndsAt:      endsAt,
+			NotifyAfter: notifyAfter,
 		})
 	}
 
@@ -317,12 +385,12 @@ func (s *Storage) execTransactionally(query string, params ...interface{}) error
 	}
 	defer stmt.Close()
 
-	tx, err := s.db.BeginTx(s.context, nil)
+	tx, err := s.db.BeginTx(s.ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = stmt.ExecContext(s.context, params...)
+	_, err = stmt.ExecContext(s.ctx, params...)
 	if err != nil {
 		tx.Rollback()
 		return err

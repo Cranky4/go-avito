@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -34,14 +35,19 @@ func main() {
 	defer cancel()
 
 	config := NewConfig(configFile)
-	logg := logger.New(config.Logger.Level)
+	logg := logger.New(config.Logger.Level, log.LstdFlags)
 
 	var storage app.Storage
 	if config.Storage.Driver == SQLStorage {
-		storage = sqlstorage.New(ctx, config.Database.Dsn)
+		storage = sqlstorage.New(ctx, config.Database, logg)
 		s, ok := storage.(*sqlstorage.Storage)
 		if ok {
-			s.Connect(ctx)
+			err := s.Connect(ctx)
+			if err != nil {
+				logg.Error(err.Error())
+				cancel()
+				return
+			}
 		}
 	} else {
 		storage = memorystorage.New()

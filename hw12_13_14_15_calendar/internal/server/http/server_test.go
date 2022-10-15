@@ -19,7 +19,7 @@ func TestEventApiHandlerCreateErrors(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/events", nil)
 		w := httptest.NewRecorder()
 
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -43,7 +43,7 @@ func TestEventApiHandlerCreateErrors(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/events", body)
 		w := httptest.NewRecorder()
 
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -67,7 +67,7 @@ func TestEventApiHandlerCreateErrors(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/events", body)
 		w := httptest.NewRecorder()
 
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -92,7 +92,7 @@ func TestEventApiHandlerCreateErrors(t *testing.T) {
 		}`))
 		req := httptest.NewRequest(http.MethodPost, "/events", body)
 		w := httptest.NewRecorder()
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -123,7 +123,7 @@ func TestEventApiHandlerUpdaterErrors(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, "/events", nil)
 		w := httptest.NewRecorder()
 
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -147,7 +147,7 @@ func TestEventApiHandlerUpdaterErrors(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, "/events", body)
 		w := httptest.NewRecorder()
 
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -171,7 +171,7 @@ func TestEventApiHandlerUpdaterErrors(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPut, "/events", body)
 		w := httptest.NewRecorder()
 
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -196,7 +196,7 @@ func TestEventApiHandlerUpdaterErrors(t *testing.T) {
 		}`))
 		req := httptest.NewRequest(http.MethodPost, "/events", body)
 		w := httptest.NewRecorder()
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -262,7 +262,7 @@ func TestEventApiHandlerDeleteErrors(t *testing.T) {
 		}`))
 		req := httptest.NewRequest(http.MethodPost, "/events", body)
 		w := httptest.NewRecorder()
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -294,11 +294,12 @@ func TestEventApiHandlerSuccess(t *testing.T) {
 			"id": "48cd8858-9103-4c6a-9a83-1d58307f071b",
 			"title": "zxc",
 			"startsAt": "2022-08-23T15:04:05+07:00",
-			"endsAt": "2022-08-23T15:04:05+07:00"
+			"endsAt": "2022-08-23T15:04:05+07:00",
+			"notify": "2022-08-23T13:04:05+07:00"
 		}`))
 		req := httptest.NewRequest(http.MethodPost, "/events", body)
 		w := httptest.NewRecorder()
-		logg := logger.New("error")
+		logg := logger.New("error", 0)
 		calendar := app.New(logg, memorystorage.New())
 		handler := NewEventAPIHandler(calendar)
 		handler.ServeHTTP(w, req)
@@ -324,8 +325,9 @@ func TestEventApiHandlerSuccess(t *testing.T) {
 		require.NotEmpty(t, data)
 		require.Equal(
 			t,
-			"[{\"ID\":\"48cd8858-9103-4c6a-9a83-1d58307f071b\",\"Title\":\"zxc\",\"StartsAt\":"+
-				"\"2022-08-23T15:04:05+07:00\",\"EndsAt\":\"2022-08-23T15:04:05+07:00\"}]\n",
+			"[{\"id\":\"48cd8858-9103-4c6a-9a83-1d58307f071b\",\"title\":\"zxc\",\"startsAt\":"+
+				"\"2022-08-23T15:04:05+07:00\",\"endsAt\":\"2022-08-23T15:04:05+07:00\",\"notify\":"+
+				"\"2022-08-23T13:04:05+07:00\"}]\n",
 			string(data),
 		)
 
@@ -362,8 +364,8 @@ func TestEventApiHandlerSuccess(t *testing.T) {
 		require.NotEmpty(t, data)
 		require.Equal(
 			t,
-			"[{\"ID\":\"48cd8858-9103-4c6a-9a83-1d58307f071b\",\"Title\":\"NEW TITLE!\",\"StartsAt\":"+
-				"\"2022-08-25T15:04:05+07:00\",\"EndsAt\":\"2022-08-27T15:04:05+07:00\"}]\n",
+			"[{\"id\":\"48cd8858-9103-4c6a-9a83-1d58307f071b\",\"title\":\"NEW TITLE!\",\"startsAt\":"+
+				"\"2022-08-25T15:04:05+07:00\",\"endsAt\":\"2022-08-27T15:04:05+07:00\"}]\n",
 			string(data),
 		)
 
@@ -399,10 +401,10 @@ func TestEventApiHandlerSuccess(t *testing.T) {
 		require.NotEmpty(t, data)
 		require.Equal(
 			t,
-			"[{\"ID\":\"48cd8858-9103-4c6a-9a83-1d58307f071b\",\"Title\":\"NEW TITLE!\",\"StartsAt\":"+
-				"\"2022-08-25T15:04:05+07:00\",\"EndsAt\":\"2022-08-27T15:04:05+07:00\"},{\"ID\":\"12cd8858"+
-				"-9103-4c6a-9a83-1d58307f071c\",\"Title\":\"another one\",\"StartsAt\":\"2022-08-28T15:04:0"+
-				"5+07:00\",\"EndsAt\":\"2022-08-29T15:04:05+07:00\"}]\n",
+			"[{\"id\":\"48cd8858-9103-4c6a-9a83-1d58307f071b\",\"title\":\"NEW TITLE!\",\"startsAt\":\""+
+				"2022-08-25T15:04:05+07:00\",\"endsAt\":\"2022-08-27T15:04:05+07:00\"},{\"id\":\"12cd8858-9103"+
+				"-4c6a-9a83-1d58307f071c\",\"title\":\"another one\",\"startsAt\":\"2022-08-28T15:04:05+07:00"+
+				"\",\"endsAt\":\"2022-08-29T15:04:05+07:00\"}]\n",
 			string(data),
 		)
 
@@ -431,8 +433,8 @@ func TestEventApiHandlerSuccess(t *testing.T) {
 		require.NotEmpty(t, data)
 		require.Equal(
 			t,
-			"[{\"ID\":\"12cd8858-9103-4c6a-9a83-1d58307f071c\",\"Title\":\"another one\","+
-				"\"StartsAt\":\"2022-08-28T15:04:05+07:00\",\"EndsAt\":\"2022-08-29T15:04:05+07:00\"}]\n",
+			"[{\"id\":\"12cd8858-9103-4c6a-9a83-1d58307f071c\",\"title\":\"another one\","+
+				"\"startsAt\":\"2022-08-28T15:04:05+07:00\",\"endsAt\":\"2022-08-29T15:04:05+07:00\"}]\n",
 			string(data),
 		)
 	})

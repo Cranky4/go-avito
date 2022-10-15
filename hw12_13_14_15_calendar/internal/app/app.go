@@ -35,12 +35,19 @@ func New(logger Logger, storage Storage) *App {
 	return &App{logger: logger, storage: storage}
 }
 
-func (a App) CreateEvent(ctx context.Context, id storage.EventID, title string, startsAt, endsAt time.Time) error {
+func (a App) CreateEvent(
+	ctx context.Context,
+	id storage.EventID,
+	title string,
+	startsAt, endsAt time.Time,
+	notifyAfter storage.NotifyAfter,
+) error {
 	event := storage.Event{
-		ID:       id,
-		Title:    title,
-		StartsAt: startsAt,
-		EndsAt:   endsAt,
+		ID:          id,
+		Title:       title,
+		StartsAt:    startsAt,
+		EndsAt:      endsAt,
+		NotifyAfter: notifyAfter,
 	}
 
 	err := a.storage.CreateEvent(event)
@@ -61,12 +68,19 @@ func (a App) CreateEvent(ctx context.Context, id storage.EventID, title string, 
 	return nil
 }
 
-func (a *App) UpdateEvent(ctx context.Context, id storage.EventID, title string, startsAt, endsAt time.Time) error {
+func (a *App) UpdateEvent(
+	ctx context.Context,
+	id storage.EventID,
+	title string,
+	startsAt, endsAt time.Time,
+	notifyAfter storage.NotifyAfter,
+) error {
 	event := storage.Event{
-		ID:       id,
-		Title:    title,
-		StartsAt: startsAt,
-		EndsAt:   endsAt,
+		ID:          id,
+		Title:       title,
+		StartsAt:    startsAt,
+		EndsAt:      endsAt,
+		NotifyAfter: notifyAfter,
 	}
 
 	if err := a.storage.UpdateEvent(id, event); err != nil {

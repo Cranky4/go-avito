@@ -1,19 +1,28 @@
 BIN := "./bin/calendar"
 DOCKER_IMG="calendar:develop"
 
+SCHEDULER_BIN := "./bin/scheduler"
+
+SENDER_BIN := "./bin/sender"
+
 DATABASE_DOCKER_IMG_NAME="calendar-postgres"
 DATABASE_NAME="calendar"
 DATABASE_USER="calendar_user"
 DATABASE_PASSWORD="secret"
 DATABASE_PORT="55432"
 
+DATABASE_DOCKER_IMG_NAME="calendar-postgres"
+
 GIT_HASH := $(shell git log --format="%h" -n 1)
 LDFLAGS := -X main.release="develop" -X main.buildDate=$(shell date -u +%Y-%m-%dT%H:%M:%S) -X main.gitHash=$(GIT_HASH)
 
-build:
+build: build-calendar build-scheduler build-sender
+
+# Calendar
+build-calendar:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
 
-run: build
+run-calendar: build-calendar
 	$(BIN) -config ./configs/config.toml
 
 build-img:
@@ -28,6 +37,21 @@ run-img: build-img
 version: build
 	$(BIN) version
 
+# Scheduler
+build-scheduler:
+	go build -v -o $(SCHEDULER_BIN) -ldflags "$(LDFLAGS)" ./cmd/scheduler
+
+run-scheduler: build-scheduler
+	$(SCHEDULER_BIN) -config ./configs/scheduler.toml
+
+# Sender
+build-sender:
+	go build -v -o $(SENDER_BIN) -ldflags "$(LDFLAGS)" ./cmd/sender
+
+run-sender: build-sender
+	$(SENDER_BIN) -config ./configs/sender.toml
+
+# Quallity
 test:
 	go test -race ./internal/...
 
@@ -37,21 +61,7 @@ install-lint-deps:
 lint: install-lint-deps
 	golangci-lint run ./...
 
-.PHONY: build run build-img run-img version test lint
-
-build-database-img:
-	docker run \
-		--name $(DATABASE_DOCKER_IMG_NAME) \
-		-e POSTGRES_DB=${DATABASE_NAME} \
-		-e POSTGRES_USER=${DATABASE_USER} \
-		-e POSTGRES_PASSWORD=${DATABASE_PASSWORD} \
-		-p "${DATABASE_PORT}:5432" \
-		postgres:14-alpine
-start-database-img:
-	docker start ${DATABASE_DOCKER_IMG_NAME}
-stop-database-img:
-	docker stop ${DATABASE_DOCKER_IMG_NAME}
-
+# Database
 install-goose:
 	(which goose > /dev/null) || go install github.com/pressly/goose/v3/cmd/goose@latest
 migrate-status: install-goose
@@ -70,6 +80,24 @@ install-protobuf:
 	go install google.golang.org/protobuf/cmd/protoc-gen-go
 	go install google.golang.org/grpc/cmd/protoc-gen-go-grpc
 
-
+# GRPC
 generate:
 	protoc ./api/EventService.proto --go_out=./api --go-grpc_out=./api
+
+# Dev
+up-dev:
+	DATABASE_NAME="calendar" \
+	DATABASE_USER="calendar_user" \
+	DATABASE_PASSWORD="secret" \
+	DATABASE_PORT="55432" \
+	ZOOKEEPER_PORT="2181" \
+	KAFKA_PORT="9093" \
+	KAFKA_UI_PORT="22181" \
+	docker-compose -f deployments/docker-compose.dev.yaml up -d
+
+down-dev:
+	docker-compose -f deployments/docker-compose.dev.yaml down
+logs-dev:
+	docker-compose -f deployments/docker-compose.dev.yaml logs calendar scheduler sender migrator -f
+
+.PHONY: build run build-img run-img version test lint
