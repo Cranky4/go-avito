@@ -56,7 +56,6 @@ type (
 )
 
 func TestValidate(t *testing.T) {
-	// invalid params
 	tests := []struct {
 		in          interface{}
 		expectedErr error
@@ -82,21 +81,15 @@ func TestValidate(t *testing.T) {
 			expectedErr: ErrInvalidValidatorTagValue{},
 		},
 	}
-
 	for i, tt := range tests {
 		t.Run(fmt.Sprintf("case %d", i), func(t *testing.T) {
 			tt := tt
 			t.Parallel()
-
 			err := Validate(tt.in)
-
-			assert.True(t, errors.As(err, &tt.expectedErr))
-
+			assert.NotNil(t, err)
 			_ = tt
 		})
 	}
-
-	// validation tests
 	validationTests := []struct {
 		in             interface{}
 		expectedErrors string
@@ -109,6 +102,7 @@ func TestValidate(t *testing.T) {
 				Email:  "john@smith", // invalid
 				Role:   "admin",
 				Phones: []string{"88005553535"},
+				meta:   nil,
 			},
 			expectedErrors: "ID: expected size is 36, actual is 8\nEmail: invalid format for john@smith\n",
 		},
@@ -120,6 +114,7 @@ func TestValidate(t *testing.T) {
 				Email:  "john@smith.com",
 				Role:   "stuff",
 				Phones: []string{"88005553535"},
+				meta:   nil,
 			},
 			expectedErrors: "Age: cannot be less than 18, actual is 12\n",
 		},
@@ -131,6 +126,7 @@ func TestValidate(t *testing.T) {
 				Email:  "john@smith.com",
 				Role:   "stuff",
 				Phones: []string{"880055535"}, // too short
+				meta:   nil,
 			},
 			expectedErrors: "Age: cannot be greater than 50, actual is 99\nPhones[0]: expected size is 11, actual is 9\n",
 		},
@@ -142,6 +138,7 @@ func TestValidate(t *testing.T) {
 				Email:  "john@smith.com",
 				Role:   "customer", // invalid
 				Phones: []string{"88005553535"},
+				meta:   nil,
 			},
 			expectedErrors: "Role: must be one of [admin stuff], actual is customer\n",
 		},
@@ -159,7 +156,6 @@ func TestValidate(t *testing.T) {
 			expectedErrors: "Version: expected size is 5, actual is 14\n",
 		},
 	}
-
 	for i, tt := range validationTests {
 		t.Run(fmt.Sprintf("validation case %d", i), func(t *testing.T) {
 			tt := tt
@@ -173,8 +169,6 @@ func TestValidate(t *testing.T) {
 			_ = tt
 		})
 	}
-
-	// Valid data
 	validTests := []interface{}{
 		User{
 			ID:     "5f56fb38-4ba3-40b3-98d8-3119c7061a86",
@@ -183,6 +177,7 @@ func TestValidate(t *testing.T) {
 			Email:  "john@smith.com",
 			Role:   "admin",
 			Phones: []string{"88005553535"},
+			meta:   nil,
 		},
 		App{
 			Version: "1.0.1",
@@ -197,7 +192,6 @@ func TestValidate(t *testing.T) {
 			Body: "OK",
 		},
 	}
-
 	for i, tt := range validTests {
 		t.Run(fmt.Sprintf("validation case %d", i), func(t *testing.T) {
 			tt := tt
